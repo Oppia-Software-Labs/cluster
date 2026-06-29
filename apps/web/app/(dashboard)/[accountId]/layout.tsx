@@ -18,11 +18,15 @@ export default function DashboardLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ accountId: string }> | { accountId: string };
+  // Next 15 types route `params` as a Promise. Tests pass a plain object;
+  // the runtime guard below unwraps either form.
+  params: Promise<{ accountId: string }>;
 }) {
-  // Next 15 passes params as a Promise in async layouts; `use` unwraps it
-  // and is a no-op for the plain object the test passes.
-  const resolved = params instanceof Promise ? use(params) : params;
+  const maybePromise = params as
+    | Promise<{ accountId: string }>
+    | { accountId: string };
+  const resolved =
+    maybePromise instanceof Promise ? use(maybePromise) : maybePromise;
   const { accountId } = resolved;
 
   const router = useRouter();
