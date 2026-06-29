@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   Post,
@@ -10,22 +9,32 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { ZodBody } from '../common/decorators/zod-body.decorator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { ChallengeQueryDto } from './dto/challenge-query.dto';
-import { VerifyAuthDto } from './dto/verify.dto';
+import {
+  stellarPublicKeySchema,
+  verifyAuthSchema,
+  type VerifyAuthDto,
+} from './dto/auth.schemas';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Get('challenge')
-  challenge(@Query() query: ChallengeQueryDto): { message: string; nonce: string } {
-    return this.auth.createChallenge(query.publicKey);
+  challenge(
+    @Query('publicKey', new ZodValidationPipe(stellarPublicKeySchema)) publicKey: string,
+  ): { message: string; nonce: string } {
+    return this.auth.createChallenge(publicKey);
   }
 
   @Post('verify')
-  async verify(@Body() dto: VerifyAuthDto, @Res({ passthrough: true }) res: Response) {
+  async verify(
+    @ZodBody(verifyAuthSchema) dto: VerifyAuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const ok = this.auth.verifyChallenge(dto.publicKey, dto.signature, dto.nonce);
     if (!ok) {
       throw new UnauthorizedException('Signature verification failed');

@@ -1,11 +1,12 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import * as cookieParser from 'cookie-parser';
 import { Keypair, hash } from '@stellar/stellar-sdk';
 import { AuthModule } from '../src/auth/auth.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
 const SEP53_PREFIX = 'Stellar Signed Message:\n';
 function signSep53(kp: Keypair, message: string): string {
@@ -36,8 +37,11 @@ describe('Auth (e2e)', () => {
       .useValue(prismaMock)
       .compile();
     app = moduleRef.createNestApplication();
+    // Mirror production (main.ts): cookie-parser + the global HttpExceptionFilter,
+    // and NO global ValidationPipe. Request validation runs only via the per-route
+    // zod pipes (@ZodBody / @Query(ZodValidationPipe)), exactly as in production.
     app.use(cookieParser());
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
   });
 
@@ -76,6 +80,32 @@ describe('Auth (e2e)', () => {
       .set('Cookie', setCookie)
       .expect(201)
       .expect((r) => expect(r.headers['set-cookie'][0]).toMatch(/cluster_session=;/));
+  });
+
+  it('rejects POST /auth/verify with a malformed body (zod 400 envelope)', async () => {
+    // Bad publicKey + missing nonce: the per-route @ZodBody pipe must reject
+    // this before any handler logic runs, producing the HttpExceptionFilter envelope.
+    const res = await request(app.getHttpServer())
+      .post('/auth/verify')
+      .send({ publicKey: 'not-a-stellar-key', signature: 'AAAA' })
+      .expect(400);
+    expect(res.body).toEqual(
+      expect.objectContaining({ statusCode: 400, message: 'Validation failed' }),
+    );
+    expect(Array.isArray(res.body.details)).toBe(true);
+    expect(res.body.details.length).toBeGreaterThan(0);
+  });
+
+  it('rejects GET /auth/challenge with a bad publicKey (zod 400)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/auth/challenge')
+      .query({ publicKey: 'nope' })
+      .expect(400);
+    expect(res.body).toEqual(
+      expect.objectContaining({ statusCode: 400, message: 'Validation failed' }),
+    );
+    expect(Array.isArray(res.body.details)).toBe(true);
+    expect(res.body.details.length).toBeGreaterThan(0);
   });
 
   it('rejects verify with a replayed nonce', async () => {

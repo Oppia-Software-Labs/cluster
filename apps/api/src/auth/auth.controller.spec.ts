@@ -30,7 +30,7 @@ describe('AuthController', () => {
   });
 
   it('challenge returns message+nonce', () => {
-    expect(controller.challenge({ publicKey: 'GABC' } as any)).toEqual({ message: 'm', nonce: 'n' });
+    expect(controller.challenge('GABC')).toEqual({ message: 'm', nonce: 'n' });
   });
 
   it('verify rejects a bad signature', async () => {
