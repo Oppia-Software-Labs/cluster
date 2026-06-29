@@ -1,0 +1,30 @@
+{
+  "name": "@cluster/stellar",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules"
+  },
+  "dependencies": {
+    "@cluster/shared": "*"
+  },
+  "devDependencies": {
+    "@cluster/config": "*",
+    "tsup": "^8.3.0",
+    "typescript": "^5.8.0"
+  }
+}
