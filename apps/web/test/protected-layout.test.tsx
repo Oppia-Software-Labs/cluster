@@ -15,6 +15,14 @@ vi.mock("@/lib/auth", () => ({
 
 import DashboardLayout from "@/app/(dashboard)/[accountId]/layout";
 
+// Next 15 types route `params` as a Promise. The layout's runtime guard also
+// accepts a plain object (it only calls `use()` when given an actual Promise),
+// so we pass a plain object cast to the declared type to keep the render
+// synchronous (no Suspense) while satisfying the type checker.
+function makeParams(accountId: string): Promise<{ accountId: string }> {
+  return { accountId } as unknown as Promise<{ accountId: string }>;
+}
+
 describe("protected dashboard layout", () => {
   beforeEach(() => {
     replace.mockClear();
@@ -23,7 +31,7 @@ describe("protected dashboard layout", () => {
   it("redirects to /connect when there is no session", () => {
     useAuthMock.mockReturnValue({ user: null, isLoading: false });
     render(
-      <DashboardLayout params={{ accountId: "acc123" }}>
+      <DashboardLayout params={makeParams("acc123")}>
         <div>secret</div>
       </DashboardLayout>,
     );
@@ -37,7 +45,7 @@ describe("protected dashboard layout", () => {
       isLoading: false,
     });
     render(
-      <DashboardLayout params={{ accountId: "acc123" }}>
+      <DashboardLayout params={makeParams("acc123")}>
         <div>secret</div>
       </DashboardLayout>,
     );

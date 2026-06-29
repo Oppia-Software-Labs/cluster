@@ -12,7 +12,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "start": "turbo run start",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "tsup": "^8.3.0",
