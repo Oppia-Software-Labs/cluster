@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
-    "build": "next build",
-    "start": "next start --port 3000",
-    "lint": "next lint",
+    "dev": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next dev --port 3000",
+    "build": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next build",
+    "start": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next start --port 3000",
+    "lint": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next lint",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "clean": "rm -rf .next node_modules"
@@ -31,6 +31,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "cross-env": "^7.0.3",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.3.0",
     "jsdom": "^25.0.1",
