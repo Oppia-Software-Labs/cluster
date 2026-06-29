@@ -1,0 +1,68 @@
+/* @cluster/ui theme — shadcn semantic tokens over Cluster's dark base.
+   Extends globals.css (--background #0a0a0a / --foreground #ededed).
+   Dark-only product: :root carries the dark palette. */
+
+:root {
+  /* Base (kept in sync with globals.css). */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  /* Surfaces. */
+  --card: #131313;
+  --card-foreground: #ededed;
+  --popover: #131313;
+  --popover-foreground: #ededed;
+
+  /* Primary = white-filled (Squads "Send"/CTA buttons). */
+  --primary: #fafafa;
+  --primary-foreground: #0a0a0a;
+
+  --secondary: #1c1c1c;
+  --secondary-foreground: #ededed;
+
+  --muted: #1c1c1c;
+  --muted-foreground: #8f8f8f;
+
+  --accent: #1c1c1c;
+  --accent-foreground: #ededed;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+
+  /* Lines + form. */
+  --border: #262626;
+  --input: #262626;
+  --ring: #525252;
+
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
