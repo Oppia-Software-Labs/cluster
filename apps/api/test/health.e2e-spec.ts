@@ -4,7 +4,6 @@ import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { ZodValidationPipe } from '../src/common/pipes/zod-validation.pipe';
 
 // Provide the full §1.4 mainnet-only env matrix with dummy-but-valid values so
 // ConfigModule's zod validation passes at boot. The PrismaService override
@@ -40,7 +39,6 @@ describe('Health (e2e)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ZodValidationPipe());
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
   });
