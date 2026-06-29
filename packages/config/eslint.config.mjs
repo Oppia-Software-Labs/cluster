@@ -20,5 +20,18 @@ export default tseslint.config(
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }
       ],
     },
+  },
+  {
+    // Test files legitimately use `any` for mocks/stubs and partial fixtures.
+    // Keep production code strict; relax only `no-explicit-any` for test globs.
+    files: [
+      "**/*.spec.ts",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/test/**/*.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
   }
 );

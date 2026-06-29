@@ -1,4 +1,4 @@
-import { Body, Controller, INestApplication, Post } from '@nestjs/common';
+import { Controller, INestApplication, Post } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { z } from 'zod';
