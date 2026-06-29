@@ -1,0 +1,18 @@
+{
+  "name": "@cluster/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "tsconfig.base.json",
+    "eslint.config.mjs"
+  ],
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint": "./eslint.config.mjs"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.23.0",
+    "typescript-eslint": "^8.20.0"
+  }
+}
