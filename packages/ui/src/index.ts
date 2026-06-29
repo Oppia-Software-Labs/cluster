@@ -1,4 +1,2 @@
-// @cluster/ui — shadcn/ui primitives, theme.css, and the app shell are added
-// in sub-project E. Placeholder so the Turbo graph and workspace wiring exist
-// now.
-export {};
+export { cn } from "@/lib/utils";
+export { Button, buttonVariants } from "@/components/ui/button";
