@@ -1,9 +1,10 @@
 import { TransactionBuilder, rpc } from "@stellar/stellar-sdk";
 import { Api } from "@stellar/stellar-sdk/rpc";
+import { getRpcServer } from "./rpc.js";
 
 export interface SubmitOptions {
   /** RPC server (real or mocked). Defaults to a server from getRpcServer() if omitted. */
-  server: rpc.Server;
+  server?: rpc.Server;
   networkPassphrase: string;
   /** Delay between polls in ms (0 in tests). Default 2000. */
   pollIntervalMs?: number;
@@ -15,6 +16,10 @@ export interface SubmitResult {
   hash: string;
   status: Api.GetTransactionStatus;
 }
+
+/** Default poll cadence + cap → a ~60s (30 × 2000ms) bounded result-polling window. */
+const DEFAULT_POLL_INTERVAL_MS = 2000;
+const DEFAULT_MAX_POLLS = 30;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -29,7 +34,12 @@ export async function submitSignedXdr(
   signedXdr: string,
   options: SubmitOptions,
 ): Promise<SubmitResult> {
-  const { server, networkPassphrase, pollIntervalMs = 2000, maxPolls = 30 } = options;
+  const {
+    server = getRpcServer(),
+    networkPassphrase,
+    pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+    maxPolls = DEFAULT_MAX_POLLS,
+  } = options;
 
   const tx = TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
   const sent = await server.sendTransaction(tx as any);
@@ -40,6 +50,17 @@ export async function submitSignedXdr(
     );
   }
 
+  if (sent.status === "TRY_AGAIN_LATER") {
+    // The tx was NOT queued (mempool full / rate-limited), so getTransaction(hash)
+    // would return NOT_FOUND for every poll and surface a misleading timeout.
+    // Surface it as a distinct, retryable error instead.
+    throw new Error(
+      `sendTransaction returned TRY_AGAIN_LATER for ${sent.hash}: transaction was not queued (retry later)`,
+    );
+  }
+
+  // DUPLICATE intentionally falls through to the poll loop: the prior submission's
+  // result is discoverable by the same hash, so polling resolves it normally.
   const hash = sent.hash;
 
   for (let attempt = 0; attempt < maxPolls; attempt++) {

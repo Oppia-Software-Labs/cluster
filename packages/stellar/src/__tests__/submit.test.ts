@@ -51,6 +51,22 @@ describe("submitSignedXdr", () => {
     expect(server.getTransaction).not.toHaveBeenCalled();
   });
 
+  it("throws a distinct retryable error when sendTransaction returns TRY_AGAIN_LATER", async () => {
+    const server = {
+      sendTransaction: vi.fn().mockResolvedValue({ status: "TRY_AGAIN_LATER", hash: "abc123" }),
+      getTransaction: vi.fn(),
+    } as any;
+
+    // Must reject as retryable (rate-limited / not queued), NOT as a poll timeout.
+    await expect(
+      submitSignedXdr(signedXdr(), { server, networkPassphrase: NETWORK_PASSPHRASE, pollIntervalMs: 0 }),
+    ).rejects.toThrow(/TRY_AGAIN_LATER/);
+    await expect(
+      submitSignedXdr(signedXdr(), { server, networkPassphrase: NETWORK_PASSPHRASE, pollIntervalMs: 0 }),
+    ).rejects.not.toThrow(/timed out/i);
+    expect(server.getTransaction).not.toHaveBeenCalled();
+  });
+
   it("returns FAILED status when the transaction is included but fails", async () => {
     const server = {
       sendTransaction: vi.fn().mockResolvedValue({ status: "PENDING", hash: "h" }),
