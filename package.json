@@ -22,6 +22,11 @@
     "vitest": "^2.1.0",
     "zod": "^3.23.8"
   },
+  "optionalDependencies": {
+    "@esbuild/linux-x64": "0.27.7",
+    "@next/swc-linux-x64-gnu": "15.5.19",
+    "@rollup/rollup-linux-x64-gnu": "4.62.2"
+  },
   "packageManager": "npm@11.14.1",
   "engines": {
     "node": ">=18"
