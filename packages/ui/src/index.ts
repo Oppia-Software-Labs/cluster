@@ -1,5 +1,5 @@
-export { cn } from "@/lib/utils";
-export { Button, buttonVariants } from "@/components/ui/button";
+export { cn } from "./lib/utils";
+export { Button, buttonVariants } from "./components/ui/button";
 export {
   Card,
   CardHeader,
@@ -7,11 +7,11 @@ export {
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
-export { Input } from "@/components/ui/input";
-export { Badge, badgeVariants } from "@/components/ui/badge";
-export { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-export { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+} from "./components/ui/card";
+export { Input } from "./components/ui/input";
+export { Badge, badgeVariants } from "./components/ui/badge";
+export { Avatar, AvatarImage, AvatarFallback } from "./components/ui/avatar";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs";
 export {
   Dialog,
   DialogClose,
@@ -23,7 +23,7 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "./components/ui/dialog";
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -31,4 +31,4 @@ export {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "./components/ui/dropdown-menu";
