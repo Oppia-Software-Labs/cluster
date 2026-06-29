@@ -16,15 +16,20 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
+    "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
-    "@cluster/shared": "*"
+    "@stellar/stellar-sdk": "15.1.0"
   },
   "devDependencies": {
     "@cluster/config": "*",
+    "@cluster/shared": "*",
     "tsup": "^8.3.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.0"
   }
 }
