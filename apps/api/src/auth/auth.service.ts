@@ -27,6 +27,15 @@ export class AuthService {
     if (!StrKey.isValidEd25519PublicKey(publicKey)) {
       throw new UnauthorizedException('Invalid Stellar public key');
     }
+    // Lazy sweep on write: drop challenges that were issued but never verified
+    // and have since expired, so an unauthenticated caller cannot grow the store
+    // without bound. The per-read TTL check in verifyChallenge still applies.
+    const now = Date.now();
+    for (const [key, entry] of this.challenges) {
+      if (now > entry.expiresAt) {
+        this.challenges.delete(key);
+      }
+    }
     const nonce = randomBytes(32).toString('hex');
     const message =
       `Cluster authentication\n` +

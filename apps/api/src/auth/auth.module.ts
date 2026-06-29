@@ -9,7 +9,10 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET,
-        signOptions: { expiresIn: '7d' },
+        // Pin the symmetric algorithm on both sign and verify (defense-in-depth
+        // against alg-confusion / "none" downgrade regressions).
+        signOptions: { expiresIn: '7d', algorithm: 'HS256' },
+        verifyOptions: { algorithms: ['HS256'] },
       }),
     }),
   ],

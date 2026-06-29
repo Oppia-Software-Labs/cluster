@@ -64,6 +64,25 @@ describe('AuthService.verifySignature (SEP-53)', () => {
     expect(service.verifyChallenge(kp.publicKey(), signature, nonce)).toBe(false);
     jest.useRealTimers();
   });
+
+  it('sweeps expired challenge entries when a new challenge is created', () => {
+    const store = (service as unknown as { challenges: Map<string, unknown> }).challenges;
+    // Seed a stale, never-consumed challenge whose TTL is already in the past.
+    store.set('stale-nonce', {
+      publicKey: 'GSTALE',
+      message: 'old',
+      expiresAt: Date.now() - 1000,
+    });
+    expect(store.has('stale-nonce')).toBe(true);
+
+    const kp = Keypair.random();
+    const { nonce } = service.createChallenge(kp.publicKey());
+
+    // The lazy sweep on write removes the expired entry...
+    expect(store.has('stale-nonce')).toBe(false);
+    // ...while the freshly issued, still-valid entry survives.
+    expect(store.has(nonce)).toBe(true);
+  });
 });
 
 describe('AuthService session issuance', () => {
@@ -78,7 +97,15 @@ describe('AuthService session issuance', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
-      imports: [JwtModule.register({ secret: 'test-secret' })],
+      // Mirror the production JwtModule config (auth.module.ts): pin HS256 on
+      // both sign and verify so the algorithm-pinning test exercises real behavior.
+      imports: [
+        JwtModule.register({
+          secret: 'test-secret',
+          signOptions: { algorithm: 'HS256' },
+          verifyOptions: { algorithms: ['HS256'] },
+        }),
+      ],
       providers: [AuthService, { provide: PrismaService, useValue: prismaMock }],
     }).compile();
     service = moduleRef.get(AuthService);
@@ -94,6 +121,15 @@ describe('AuthService session issuance', () => {
     const token = service.issueToken('GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUWDA');
     const decoded = service.verifyToken(token);
     expect(decoded.sub).toBe('GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUWDA');
+  });
+
+  it('rejects a token forged with the "none" algorithm (alg pinning)', () => {
+    // Hand-craft an unsigned alg:none JWT for the same sub. With algorithms
+    // pinned to HS256 on verify, this must be rejected.
+    const b64 = (o: object) =>
+      Buffer.from(JSON.stringify(o)).toString('base64url');
+    const noneToken = `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ sub: 'GABC' })}.`;
+    expect(() => service.verifyToken(noneToken)).toThrow();
   });
 
   it('sets an httpOnly SameSite=Lax session cookie', () => {
