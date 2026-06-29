@@ -1,4 +1,24 @@
-// @cluster/stellar — core Stellar primitives (rpc, submit, signature
-// aggregation, set_options) are added in sub-project C. Placeholder so the
-// Turbo graph and workspace wiring exist now.
-export {};
+export {
+  STELLAR_NETWORK,
+  NETWORK_PASSPHRASE,
+  getNetworkPassphrase,
+} from "./network.js";
+
+export { getRpcUrl, getRpcServer } from "./rpc.js";
+
+export { submitSignedXdr, type SubmitOptions, type SubmitResult } from "./submit.js";
+
+export {
+  accumulatedWeight,
+  isThresholdMet,
+  combineSignatures,
+  type CollectedSignature,
+  type SignerWeights,
+} from "./signatures.js";
+
+export {
+  addSignerOp,
+  setThresholdsOp,
+  disableMasterKeyOp,
+  type Thresholds,
+} from "./config-helpers.js";
