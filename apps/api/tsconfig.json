@@ -16,6 +16,10 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@cluster/shared": ["../../packages/shared/src/index.ts"],
+      "@cluster/stellar": ["../../packages/stellar/src/index.ts"]
+    }
   }
 }
