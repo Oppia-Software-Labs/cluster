@@ -25,7 +25,9 @@
   "optionalDependencies": {
     "@esbuild/linux-x64": "0.27.7",
     "@next/swc-linux-x64-gnu": "15.5.19",
-    "@rollup/rollup-linux-x64-gnu": "4.62.2"
+    "@rollup/rollup-linux-x64-gnu": "4.62.2",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.1",
+    "lightningcss-linux-x64-gnu": "1.32.0"
   },
   "packageManager": "npm@11.14.1",
   "engines": {
