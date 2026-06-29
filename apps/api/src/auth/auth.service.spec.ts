@@ -65,3 +65,50 @@ describe('AuthService.verifySignature (SEP-53)', () => {
     jest.useRealTimers();
   });
 });
+
+describe('AuthService session issuance', () => {
+  let service: AuthService;
+  const prismaMock = {
+    user: {
+      upsert: jest.fn().mockResolvedValue({ publicKey: 'G...', createdAt: new Date() }),
+      findUnique: jest.fn(),
+    },
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      imports: [JwtModule.register({ secret: 'test-secret' })],
+      providers: [AuthService, { provide: PrismaService, useValue: prismaMock }],
+    }).compile();
+    service = moduleRef.get(AuthService);
+  });
+
+  it('upserts the user and returns it', async () => {
+    const user = await service.upsertUser('GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUWDA');
+    expect(prismaMock.user.upsert).toHaveBeenCalled();
+    expect(user.publicKey).toBeDefined();
+  });
+
+  it('issues a JWT whose payload carries the publicKey as sub', () => {
+    const token = service.issueToken('GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUWDA');
+    const decoded = service.verifyToken(token);
+    expect(decoded.sub).toBe('GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUWDA');
+  });
+
+  it('sets an httpOnly SameSite=Lax session cookie', () => {
+    const res = { cookie: jest.fn() } as any;
+    service.setSessionCookie(res, 'the.jwt.token');
+    expect(res.cookie).toHaveBeenCalledWith(
+      SESSION_COOKIE,
+      'the.jwt.token',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/' }),
+    );
+  });
+
+  it('clears the session cookie on logout', () => {
+    const res = { clearCookie: jest.fn() } as any;
+    service.clearSessionCookie(res);
+    expect(res.clearCookie).toHaveBeenCalledWith(SESSION_COOKIE, expect.objectContaining({ path: '/' }));
+  });
+});

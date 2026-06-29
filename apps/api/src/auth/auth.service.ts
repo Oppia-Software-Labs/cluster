@@ -1,7 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
+import type { Response } from 'express';
 import { Keypair, StrKey, hash } from '@stellar/stellar-sdk';
+import { User } from '@cluster/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 const SEP53_PREFIX = 'Stellar Signed Message:\n';
@@ -55,5 +57,40 @@ export class AuthService {
     } catch {
       return false;
     }
+  }
+
+  async upsertUser(publicKey: string): Promise<User> {
+    return this.prisma.user.upsert({
+      where: { publicKey },
+      update: {},
+      create: { publicKey },
+    }) as unknown as Promise<User>;
+  }
+
+  issueToken(publicKey: string): string {
+    return this.jwt.sign({ sub: publicKey });
+  }
+
+  verifyToken(token: string): { sub: string } {
+    return this.jwt.verify<{ sub: string }>(token);
+  }
+
+  setSessionCookie(res: Response, token: string): void {
+    res.cookie(SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE === 'true',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+
+  clearSessionCookie(res: Response): void {
+    res.clearCookie(SESSION_COOKIE, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE === 'true',
+      path: '/',
+    });
   }
 }
