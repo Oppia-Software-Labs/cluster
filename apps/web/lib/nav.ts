@@ -1,4 +1,15 @@
-import { LayoutDashboard, Settings, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  ArrowDownToLine,
+  Coins,
+  History,
+  Image,
+  LayoutDashboard,
+  Send,
+  Settings,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 
 /**
  * A single sidebar navigation entry.
@@ -30,4 +41,11 @@ export const navRegistry: NavEntry[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Settings", href: "/settings", icon: Settings },
   // ↓ other members append below this line ↓
+  { label: "Send", href: "/send", icon: Send },
+  { label: "Deposit", href: "/deposit", icon: ArrowDownToLine },
+  { label: "Activity", href: "/activity", icon: Activity },
+  { label: "History", href: "/history", icon: History },
+  { label: "Coins", href: "/coins", icon: Coins },
+  { label: "NFTs", href: "/nfts", icon: Image },
+  { label: "Cashflow", href: "/cashflow", icon: TrendingUp },
 ];
