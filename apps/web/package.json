@@ -12,8 +12,11 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
+    "@cluster/shared": "*",
+    "@cluster/stellar": "*",
     "@cluster/ui": "*",
     "@creit.tech/stellar-wallets-kit": "^2.4.0",
+    "@stellar/stellar-sdk": "15.1.0",
     "@tanstack/react-query": "^5.66.0",
     "axios": "^1.7.9",
     "lucide-react": "^0.469.0",
