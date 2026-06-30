@@ -22,3 +22,5 @@ export {
   disableMasterKeyOp,
   type Thresholds,
 } from "./config-helpers.js";
+
+export { PaymentBuilder, type PaymentInput } from "./builders/payment.js";

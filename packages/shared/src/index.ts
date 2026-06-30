@@ -6,3 +6,5 @@ export * from "./dtos/multisig-account";
 export * from "./dtos/account-member";
 export * from "./dtos/transaction";
 export * from "./dtos/signature";
+export * from "./dtos/transaction-detail";
+export * from "./dtos/assets";
