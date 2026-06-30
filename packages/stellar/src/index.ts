@@ -33,3 +33,5 @@ export {
   type CreateAccountTxInput,
   type ConfigTxContext,
 } from "./builders/config.js";
+
+export { PaymentBuilder, type PaymentInput } from "./builders/payment.js";
