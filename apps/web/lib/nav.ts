@@ -1,4 +1,9 @@
-import { LayoutDashboard, Settings, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Settings,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 /**
  * A single sidebar navigation entry.
@@ -30,4 +35,6 @@ export const navRegistry: NavEntry[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Settings", href: "/settings", icon: Settings },
   // ↓ other members append below this line ↓
+  // M2 — account governance (members & thresholds).
+  { label: "Members", href: "/members", icon: Users },
 ];
