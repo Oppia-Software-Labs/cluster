@@ -22,3 +22,14 @@ export {
   disableMasterKeyOp,
   type Thresholds,
 } from "./config-helpers.js";
+
+export {
+  buildCreateAccountTx,
+  assertThresholdsSatisfiable,
+  buildAddMemberTx,
+  buildRemoveMemberTx,
+  buildSetThresholdsTx,
+  type AccountMemberInput,
+  type CreateAccountTxInput,
+  type ConfigTxContext,
+} from "./builders/config.js";
