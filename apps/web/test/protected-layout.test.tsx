@@ -1,7 +1,17 @@
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const replace = vi.fn();
+
+// The shell's account switcher (Member 2) reads accounts via TanStack Query, so
+// rendering the authenticated layout needs a QueryClient.
+function withClient(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
+}
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/acc123",
@@ -45,9 +55,11 @@ describe("protected dashboard layout", () => {
       isLoading: false,
     });
     render(
-      <DashboardLayout params={makeParams("acc123")}>
-        <div>secret</div>
-      </DashboardLayout>,
+      withClient(
+        <DashboardLayout params={makeParams("acc123")}>
+          <div>secret</div>
+        </DashboardLayout>,
+      ),
     );
     expect(replace).not.toHaveBeenCalled();
     expect(screen.getByText("secret")).toBeInTheDocument();
