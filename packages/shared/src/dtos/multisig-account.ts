@@ -10,6 +10,10 @@ export const accountThresholdsSchema = z.object({
 });
 export type AccountThresholds = z.infer<typeof accountThresholdsSchema>;
 
+/** Request body for PATCH /accounts/:id/thresholds. */
+export const updateAccountThresholdsRequestSchema = accountThresholdsSchema;
+export type UpdateAccountThresholdsRequest = AccountThresholds;
+
 /** Input to create a multisig account. network is server-fixed to mainnet. */
 export const createMultisigAccountSchema = z.object({
   name: z.string().min(1),

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -6,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type {
+  AccountThresholds,
+  AddAccountMemberRequest,
   CreateMultisigAccountRequest,
   MultisigAccount,
   MultisigAccountWithMembers,
@@ -146,6 +149,167 @@ export class AccountsService {
     }
     this.assertMemberOf(row, requesterPublicKey);
     return row.members.map((m) => this.toMember(m));
+  }
+
+  /**
+   * Add a signer to an account. Updates Cluster's off-chain record so the
+   * roster and threshold math stay in sync across the app; on-chain
+   * enforcement of the new signer is a separate config transaction (see
+   * `buildAddMemberTx` in @cluster/stellar) run through the signing pipeline.
+   * Restricted to owners/admins.
+   */
+  async addMember(
+    accountId: string,
+    requesterPublicKey: string,
+    dto: AddAccountMemberRequest,
+  ): Promise<MultisigAccountWithMembers> {
+    const row = await this.loadManageable(accountId, requesterPublicKey);
+
+    if (row.members.some((m) => m.publicKey === dto.publicKey)) {
+      throw new ConflictException('That signer is already a member');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // FK: AccountMember.publicKey -> User.publicKey. The signer may be new.
+      await tx.user.upsert({
+        where: { publicKey: dto.publicKey },
+        update: {},
+        create: { publicKey: dto.publicKey },
+      });
+      await tx.accountMember.create({
+        data: {
+          accountId,
+          publicKey: dto.publicKey,
+          weight: dto.weight,
+          // Only the account creator holds `owner`; new signers cannot claim it.
+          role: dto.role === 'owner' ? 'admin' : dto.role,
+        },
+      });
+      await tx.activityLog.create({
+        data: {
+          accountId,
+          actor: requesterPublicKey,
+          action: 'member.added',
+          metadata: { publicKey: dto.publicKey, weight: dto.weight, role: dto.role },
+        },
+      });
+      return tx.multisigAccount.findUniqueOrThrow({
+        where: { id: accountId },
+        include: { members: true },
+      });
+    });
+
+    return this.toAccountWithMembers(updated);
+  }
+
+  /**
+   * Remove a signer. Owners can never be removed (there must always be a
+   * controlling key), and an account must keep at least one member. Restricted
+   * to owners/admins.
+   */
+  async removeMember(
+    accountId: string,
+    requesterPublicKey: string,
+    memberId: string,
+  ): Promise<MultisigAccountWithMembers> {
+    const row = await this.loadManageable(accountId, requesterPublicKey);
+
+    const target = row.members.find((m) => m.id === memberId);
+    if (!target) {
+      throw new NotFoundException('Member not found on this account');
+    }
+    if (target.role === 'owner') {
+      throw new BadRequestException('The account owner cannot be removed');
+    }
+    if (row.members.length <= 1) {
+      throw new BadRequestException('An account must keep at least one member');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.accountMember.delete({ where: { id: memberId } });
+      await tx.activityLog.create({
+        data: {
+          accountId,
+          actor: requesterPublicKey,
+          action: 'member.removed',
+          metadata: { publicKey: target.publicKey },
+        },
+      });
+      return tx.multisigAccount.findUniqueOrThrow({
+        where: { id: accountId },
+        include: { members: true },
+      });
+    });
+
+    return this.toAccountWithMembers(updated);
+  }
+
+  /**
+   * Update the low/medium/high signing thresholds. Each threshold must be
+   * satisfiable by the current combined signer weight, otherwise the account
+   * could lock itself out. Restricted to owners/admins.
+   */
+  async updateThresholds(
+    accountId: string,
+    requesterPublicKey: string,
+    thresholds: AccountThresholds,
+  ): Promise<MultisigAccountWithMembers> {
+    const row = await this.loadManageable(accountId, requesterPublicKey);
+
+    const totalWeight = row.members.reduce((sum, m) => sum + m.weight, 0);
+    const tooHigh = (['low', 'medium', 'high'] as const).find(
+      (level) => thresholds[level] > totalWeight,
+    );
+    if (tooHigh) {
+      throw new BadRequestException(
+        `The ${tooHigh} threshold (${thresholds[tooHigh]}) exceeds the total signer weight (${totalWeight})`,
+      );
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.multisigAccount.update({
+        where: { id: accountId },
+        data: { low: thresholds.low, medium: thresholds.medium, high: thresholds.high },
+      });
+      await tx.activityLog.create({
+        data: {
+          accountId,
+          actor: requesterPublicKey,
+          action: 'thresholds.updated',
+          metadata: { ...thresholds },
+        },
+      });
+      return tx.multisigAccount.findUniqueOrThrow({
+        where: { id: accountId },
+        include: { members: true },
+      });
+    });
+
+    return this.toAccountWithMembers(updated);
+  }
+
+  /** Load an account, 404/403-guarding for existence and manage permission. */
+  private async loadManageable(
+    accountId: string,
+    requesterPublicKey: string,
+  ): Promise<AccountRow> {
+    const row = await this.prisma.multisigAccount.findUnique({
+      where: { id: accountId },
+      include: { members: true },
+    });
+    if (!row) {
+      throw new NotFoundException('Account not found');
+    }
+    const me = row.members.find((m) => m.publicKey === requesterPublicKey);
+    if (!me) {
+      throw new ForbiddenException('Not a member of this account');
+    }
+    if (me.role !== 'owner' && me.role !== 'admin') {
+      throw new ForbiddenException(
+        'Only owners and admins can manage members and thresholds',
+      );
+    }
+    return row;
   }
 
   private assertMemberOf(row: AccountRow, publicKey: string): void {
