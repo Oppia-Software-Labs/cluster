@@ -9,6 +9,8 @@ import {
   TabsTrigger,
 } from "@cluster/ui";
 
+import { AccountsList } from "@/components/accounts/accounts-list";
+
 /** Empty labeled placeholder for a widget another member owns. */
 function Slot({
   id,
@@ -66,9 +68,8 @@ export default function OverviewPage() {
           <TabsTrigger value="nfts">NFTs</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
-          <Slot id="slot-accounts-table" owner="M2">
-            Accounts / members table
-          </Slot>
+          {/* M2 (Point 4): the user's multisig accounts + create flow. */}
+          <AccountsList />
         </TabsContent>
         <TabsContent value="coins">
           <Slot id="slot-coins-table" owner="M3">

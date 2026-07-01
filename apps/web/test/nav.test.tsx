@@ -2,9 +2,12 @@ import { describe, it, expect } from "vitest";
 import { navRegistry, type NavEntry } from "@/lib/nav";
 
 describe("nav registry", () => {
-  it("starts with M1's own entries (Dashboard, Settings)", () => {
+  it("keeps M1's seed entries first, with member-appended entries after", () => {
     const labels = navRegistry.map((e: NavEntry) => e.label);
+    // M1's seed entries stay first and in order (append-only registry)...
     expect(labels.slice(0, 2)).toEqual(["Dashboard", "Settings"]);
+    // ...followed by M2's governance entry.
+    expect(labels).toContain("Members");
   });
 
   it("every entry has a label, href and icon", () => {

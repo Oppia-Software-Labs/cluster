@@ -23,4 +23,15 @@ export {
   type Thresholds,
 } from "./config-helpers.js";
 
+export {
+  buildCreateAccountTx,
+  assertThresholdsSatisfiable,
+  buildAddMemberTx,
+  buildRemoveMemberTx,
+  buildSetThresholdsTx,
+  type AccountMemberInput,
+  type CreateAccountTxInput,
+  type ConfigTxContext,
+} from "./builders/config.js";
+
 export { PaymentBuilder, type PaymentInput } from "./builders/payment.js";

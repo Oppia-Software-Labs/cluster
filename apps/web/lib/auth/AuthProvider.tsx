@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async () => {
     setError(null);
     try {
-      const kit = getWalletKit();
+      const kit = await getWalletKit();
       setStatus("connecting");
       // Open the wallet selection modal; resolves with the chosen wallet's
       // address once the user picks a wallet and grants access.

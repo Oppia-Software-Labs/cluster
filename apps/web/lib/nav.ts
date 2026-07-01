@@ -8,6 +8,7 @@ import {
   Send,
   Settings,
   TrendingUp,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -41,6 +42,9 @@ export const navRegistry: NavEntry[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Settings", href: "/settings", icon: Settings },
   // ↓ other members append below this line ↓
+  // M2 — account governance (members & thresholds).
+  { label: "Members", href: "/members", icon: Users },
+  // M3 — assets & transactions.
   { label: "Send", href: "/send", icon: Send },
   { label: "Deposit", href: "/deposit", icon: ArrowDownToLine },
   { label: "Activity", href: "/activity", icon: Activity },

@@ -4,11 +4,19 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from './config/config.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AccountsModule } from './accounts/accounts.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AssetsModule } from './assets/assets.module';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, AuthModule, TransactionsModule, AssetsModule],
+  imports: [
+    ConfigModule,
+    PrismaModule,
+    AuthModule,
+    AccountsModule,
+    TransactionsModule,
+    AssetsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
