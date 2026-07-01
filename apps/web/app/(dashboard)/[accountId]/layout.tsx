@@ -46,7 +46,7 @@ export default function DashboardLayout({
     <div className="flex h-screen w-full overflow-hidden">
       <Sidebar accountId={accountId} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar publicKey={user.publicKey} />
+        <Topbar />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
