@@ -18,7 +18,7 @@ function renderWithClient(ui: React.ReactElement) {
 describe("overview page scaffold", () => {
   it("renders labeled slots for the data widgets owned by other members", () => {
     renderWithClient(<OverviewPage />);
-    expect(screen.getByText("Total Balance")).toBeInTheDocument();
+    expect(screen.getByText("Total balance")).toBeInTheDocument();
     expect(screen.getByTestId("slot-balance-chart")).toBeInTheDocument();
     expect(screen.getByTestId("slot-stat-cards")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Accounts" })).toBeInTheDocument();

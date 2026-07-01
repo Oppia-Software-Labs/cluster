@@ -11,6 +11,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+// The topbar wallet menu reads the session directly.
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { publicKey: "GABCDEFGHIJKLMNOPQRSTUVWXYZ234567" },
+    logout: vi.fn(),
+  }),
+}));
+
 // The switcher fetches accounts via TanStack Query; provide a client so the
 // sidebar smoke-renders (the query stays pending in the test).
 function renderWithClient(ui: React.ReactElement) {
@@ -30,10 +38,12 @@ describe("shell smoke render", () => {
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
 
-  it("renders the topbar network status and wallet chip", () => {
-    render(<Topbar publicKey="GABCDEFGHIJKLMNOPQRSTUVWXYZ234567" />);
-    expect(screen.getByText(/Network Status/i)).toBeInTheDocument();
-    // truncated pubkey shows head…tail
+  it("renders the topbar notifications and wallet menu", () => {
+    render(<Topbar />);
+    expect(
+      screen.getByRole("button", { name: /notifications/i }),
+    ).toBeInTheDocument();
+    // wallet trigger shows the truncated pubkey head…tail
     expect(screen.getByText(/GABC.*4567/)).toBeInTheDocument();
   });
 });
