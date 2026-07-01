@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
-
-import { Card } from "@cluster/ui";
+import { ShieldCheck, X } from "lucide-react";
 
 /**
  * Dismissible footer promo slot. CHROME ONLY — content is a placeholder
@@ -14,19 +12,20 @@ export function PromoCard() {
   if (!open) return null;
 
   return (
-    <Card className="relative gap-2 p-4">
+    <div className="relative flex flex-col gap-1.5 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-4">
       <button
         type="button"
         aria-label="Dismiss"
         onClick={() => setOpen(false)}
-        className="text-muted-foreground hover:text-foreground absolute top-3 right-3"
+        className="text-muted-foreground hover:text-foreground absolute right-3 top-3"
       >
-        <X className="size-4" />
+        <X className="size-3.5" />
       </button>
-      <p className="text-sm font-medium">Welcome to Cluster</p>
-      <p className="text-muted-foreground text-xs">
-        Secure your Stellar assets with multisig.
+      <ShieldCheck className="size-4 text-[var(--gold)]" />
+      <p className="mt-1 text-sm font-medium">Welcome to Cluster</p>
+      <p className="text-muted-foreground text-xs leading-relaxed">
+        Secure your Stellar assets with on-chain multisig.
       </p>
-    </Card>
+    </div>
   );
 }
