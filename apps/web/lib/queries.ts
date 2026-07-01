@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
+  AccountThresholds,
+  AddAccountMemberRequest,
   CreateMultisigAccountRequest,
   MultisigAccount,
   MultisigAccountWithMembers,
@@ -64,5 +66,58 @@ export function useCreateAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
+  });
+}
+
+/** Refresh both the account list and the single-account detail after a change. */
+function useAccountInvalidator(accountId: string) {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ["accounts", accountId] });
+    queryClient.invalidateQueries({ queryKey: ["accounts"] });
+  };
+}
+
+/** Add a signer to an account (owner/admin only). */
+export function useAddMember(accountId: string) {
+  const invalidate = useAccountInvalidator(accountId);
+  return useMutation({
+    mutationFn: async (body: AddAccountMemberRequest) => {
+      const { data } = await http.post<MultisigAccountWithMembers>(
+        `/accounts/${accountId}/members`,
+        body,
+      );
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+/** Remove a signer from an account (owner/admin only). */
+export function useRemoveMember(accountId: string) {
+  const invalidate = useAccountInvalidator(accountId);
+  return useMutation({
+    mutationFn: async (memberId: string) => {
+      const { data } = await http.delete<MultisigAccountWithMembers>(
+        `/accounts/${accountId}/members/${memberId}`,
+      );
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+/** Update the low/medium/high signing thresholds (owner/admin only). */
+export function useUpdateThresholds(accountId: string) {
+  const invalidate = useAccountInvalidator(accountId);
+  return useMutation({
+    mutationFn: async (body: AccountThresholds) => {
+      const { data } = await http.patch<MultisigAccountWithMembers>(
+        `/accounts/${accountId}/thresholds`,
+        body,
+      );
+      return data;
+    },
+    onSuccess: invalidate,
   });
 }
