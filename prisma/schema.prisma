@@ -12,6 +12,7 @@ enum TransactionType {
   payment
   config
   trade
+  trustline
 }
 
 enum TransactionStatus {
