@@ -6,7 +6,11 @@ jest.mock('@cluster/stellar', () => {
   };
 });
 
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import {
   Account,
@@ -76,10 +80,20 @@ describe('TransactionsService.resolveRequiredThreshold', () => {
 
 describe('TransactionsService.addSignature', () => {
   let service: TransactionsService;
+  const txDbMock = {
+    transaction: { update: jest.fn() },
+    user: { upsert: jest.fn() },
+    accountMember: { upsert: jest.fn(), deleteMany: jest.fn() },
+    multisigAccount: { update: jest.fn() },
+    activityLog: { create: jest.fn() },
+  };
   const prismaMock = {
     transaction: { findUnique: jest.fn(), update: jest.fn() },
     accountMember: { findUnique: jest.fn(), findMany: jest.fn() },
     signature: { upsert: jest.fn(), findMany: jest.fn() },
+    $transaction: jest.fn(
+      async (fn: (db: typeof txDbMock) => Promise<unknown>) => fn(txDbMock),
+    ),
   };
 
   beforeEach(async () => {
@@ -110,14 +124,28 @@ describe('TransactionsService.addSignature', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('flips status pending→ready when threshold is met', async () => {
+  it('marks ready and auto-submits when the threshold is met', async () => {
     const xdr = buildUnsignedXdr();
-    prismaMock.transaction.findUnique.mockResolvedValue({
+    const sigXdr = signatureFor(xdr, signerA);
+    const baseTx = {
       id: 'tx1',
       accountId: 'acc1',
       status: 'pending',
       requiredThreshold: 2,
-    });
+      xdr,
+      proposedBy: signerA.publicKey(),
+      pendingChange: null,
+    };
+    // First lookup: the addSignature guard. Second: settleThreshold reloads
+    // the transaction with its (now complete) signature set.
+    prismaMock.transaction.findUnique
+      .mockResolvedValueOnce(baseTx)
+      .mockResolvedValueOnce({
+        ...baseTx,
+        signatures: [
+          { signerPublicKey: signerA.publicKey(), signatureXdr: sigXdr },
+        ],
+      });
     prismaMock.accountMember.findUnique.mockResolvedValue({
       publicKey: signerA.publicKey(),
       weight: 2,
@@ -126,38 +154,240 @@ describe('TransactionsService.addSignature', () => {
       id: 'sig1',
       transactionId: 'tx1',
       signerPublicKey: signerA.publicKey(),
-      signatureXdr: signatureFor(xdr, signerA),
+      signatureXdr: sigXdr,
       weight: 2,
     });
-    prismaMock.signature.findMany.mockResolvedValue([
-      {
-        signerPublicKey: signerA.publicKey(),
-        signatureXdr: signatureFor(xdr, signerA),
-      },
-    ]);
     prismaMock.accountMember.findMany.mockResolvedValue([
       { publicKey: signerA.publicKey(), weight: 2 },
       { publicKey: signerB.publicKey(), weight: 1 },
     ]);
     prismaMock.transaction.update.mockResolvedValue({});
 
+    const getTransaction = jest
+      .fn()
+      .mockResolvedValueOnce({ status: 'NOT_FOUND' })
+      .mockResolvedValueOnce({ status: 'SUCCESS' });
+    const server = {
+      sendTransaction: jest
+        .fn()
+        .mockResolvedValue({ status: 'PENDING', hash: 'auto123' }),
+      getTransaction,
+    } as any;
+    const actualStellar = jest.requireActual('@cluster/stellar');
+    (submitSignedXdr as jest.Mock).mockImplementationOnce(
+      (signedXdr: string, options: Record<string, unknown>) =>
+        actualStellar.submitSignedXdr(signedXdr, {
+          ...options,
+          server,
+          pollIntervalMs: 0,
+          maxPolls: 5,
+        }),
+    );
+
     await service.addSignature('tx1', {
       signerPublicKey: signerA.publicKey(),
-      signatureXdr: signatureFor(xdr, signerA),
+      signatureXdr: sigXdr,
     });
 
     expect(prismaMock.transaction.update).toHaveBeenCalledWith({
       where: { id: 'tx1' },
       data: { status: 'ready' },
     });
+    // …and the submission happened without a separate submit call.
+    expect(txDbMock.transaction.update).toHaveBeenCalledWith({
+      where: { id: 'tx1' },
+      data: { status: 'submitted', submittedHash: 'auto123', lastError: null },
+    });
+  });
+
+  it('keeps the signature even when auto-submission fails', async () => {
+    const xdr = buildUnsignedXdr();
+    const sigXdr = signatureFor(xdr, signerA);
+    const baseTx = {
+      id: 'tx1',
+      accountId: 'acc1',
+      status: 'pending',
+      requiredThreshold: 2,
+      xdr,
+      proposedBy: signerA.publicKey(),
+      pendingChange: null,
+    };
+    prismaMock.transaction.findUnique
+      .mockResolvedValueOnce(baseTx)
+      .mockResolvedValueOnce({
+        ...baseTx,
+        signatures: [
+          { signerPublicKey: signerA.publicKey(), signatureXdr: sigXdr },
+        ],
+      });
+    prismaMock.accountMember.findUnique.mockResolvedValue({
+      publicKey: signerA.publicKey(),
+      weight: 2,
+    });
+    prismaMock.signature.upsert.mockResolvedValue({
+      id: 'sig1',
+      transactionId: 'tx1',
+      signerPublicKey: signerA.publicKey(),
+      signatureXdr: sigXdr,
+      weight: 2,
+    });
+    prismaMock.accountMember.findMany.mockResolvedValue([
+      { publicKey: signerA.publicKey(), weight: 2 },
+    ]);
+    prismaMock.transaction.update.mockResolvedValue({});
+
+    (submitSignedXdr as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('sendTransaction returned ERROR for x (txBadSeq)')),
+    );
+
+    const sig = await service.addSignature('tx1', {
+      signerPublicKey: signerA.publicKey(),
+      signatureXdr: sigXdr,
+    });
+
+    expect(sig.id).toBe('sig1');
+    // Failure is recorded on the row with a readable reason.
+    expect(prismaMock.transaction.update).toHaveBeenCalledWith({
+      where: { id: 'tx1' },
+      data: {
+        status: 'failed',
+        lastError: expect.stringContaining('txBadSeq'),
+      },
+    });
+  });
+});
+
+describe('TransactionsService.propose (pendingChange guards)', () => {
+  let service: TransactionsService;
+  const prismaMock = {
+    multisigAccount: { findUnique: jest.fn() },
+    transaction: { create: jest.fn() },
+  };
+
+  const account = {
+    id: 'acc1',
+    low: 1,
+    medium: 2,
+    high: 3,
+    members: [
+      { publicKey: signerA.publicKey(), weight: 2, role: 'owner' },
+      { publicKey: signerB.publicKey(), weight: 1, role: 'member' },
+    ],
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        TransactionsService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
+    }).compile();
+    service = moduleRef.get(TransactionsService);
+    prismaMock.multisigAccount.findUnique.mockResolvedValue(account);
+  });
+
+  const baseDto = {
+    type: 'config' as const,
+    xdr: 'AAAA',
+    thresholdLevel: 'high' as const,
+  };
+
+  it('rejects pendingChange proposals from non-admin members', async () => {
+    await expect(
+      service.propose(
+        'acc1',
+        {
+          ...baseDto,
+          pendingChange: {
+            kind: 'member.add',
+            publicKey: 'GNEW',
+            weight: 1,
+            role: 'member',
+          },
+        },
+        signerB.publicKey(), // role: member
+      ),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('rejects adding a signer who is already a member', async () => {
+    await expect(
+      service.propose(
+        'acc1',
+        {
+          ...baseDto,
+          pendingChange: {
+            kind: 'member.add',
+            publicKey: signerB.publicKey(),
+            weight: 1,
+            role: 'member',
+          },
+        },
+        signerA.publicKey(),
+      ),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('rejects thresholds that exceed the total signer weight', async () => {
+    await expect(
+      service.propose(
+        'acc1',
+        {
+          ...baseDto,
+          pendingChange: { kind: 'thresholds.set', low: 1, medium: 2, high: 4 },
+        },
+        signerA.publicKey(),
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('stores a valid pendingChange on the transaction', async () => {
+    const pendingChange = {
+      kind: 'member.add' as const,
+      publicKey: 'GNEWSIGNER',
+      weight: 1,
+      role: 'member' as const,
+    };
+    prismaMock.transaction.create.mockResolvedValue({
+      id: 'tx1',
+      accountId: 'acc1',
+      type: 'config',
+      xdr: 'AAAA',
+      status: 'pending',
+      requiredThreshold: 3,
+      proposedBy: signerA.publicKey(),
+      memo: null,
+      submittedHash: null,
+    });
+
+    await service.propose(
+      'acc1',
+      { ...baseDto, pendingChange },
+      signerA.publicKey(),
+    );
+
+    expect(prismaMock.transaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ pendingChange, requiredThreshold: 3 }),
+    });
   });
 });
 
 describe('TransactionsService.submit', () => {
   let service: TransactionsService;
+  const txDbMock = {
+    transaction: { update: jest.fn() },
+    user: { upsert: jest.fn() },
+    accountMember: { upsert: jest.fn(), deleteMany: jest.fn() },
+    multisigAccount: { update: jest.fn() },
+    activityLog: { create: jest.fn() },
+  };
   const prismaMock = {
     transaction: { findUnique: jest.fn(), update: jest.fn() },
     accountMember: { findMany: jest.fn() },
+    $transaction: jest.fn(
+      async (fn: (db: typeof txDbMock) => Promise<unknown>) => fn(txDbMock),
+    ),
   };
 
   beforeEach(async () => {
@@ -194,28 +424,13 @@ describe('TransactionsService.submit', () => {
     await expect(service.submit('tx1')).rejects.toThrow(/threshold not met/);
   });
 
-  it('submits successfully with a mocked RPC server', async () => {
-    const xdr = buildUnsignedXdr();
-    const sigXdr = signatureFor(xdr, signerA);
-    prismaMock.transaction.findUnique.mockResolvedValue({
-      id: 'tx1',
-      accountId: 'acc1',
-      status: 'ready',
-      requiredThreshold: 1,
-      xdr,
-      signatures: [{ signerPublicKey: signerA.publicKey(), signatureXdr: sigXdr }],
-    });
-    prismaMock.accountMember.findMany.mockResolvedValue([
-      { publicKey: signerA.publicKey(), weight: 1 },
-    ]);
-    prismaMock.transaction.update.mockResolvedValue({});
-
+  function mockSuccessfulSubmit(hash = 'abc123') {
     const getTransaction = jest
       .fn()
       .mockResolvedValueOnce({ status: 'NOT_FOUND' })
       .mockResolvedValueOnce({ status: 'SUCCESS' });
     const server = {
-      sendTransaction: jest.fn().mockResolvedValue({ status: 'PENDING', hash: 'abc123' }),
+      sendTransaction: jest.fn().mockResolvedValue({ status: 'PENDING', hash }),
       getTransaction,
     } as any;
 
@@ -229,13 +444,121 @@ describe('TransactionsService.submit', () => {
           maxPolls: 5,
         }),
     );
+  }
+
+  it('submits successfully with a mocked RPC server', async () => {
+    const xdr = buildUnsignedXdr();
+    const sigXdr = signatureFor(xdr, signerA);
+    prismaMock.transaction.findUnique.mockResolvedValue({
+      id: 'tx1',
+      accountId: 'acc1',
+      status: 'ready',
+      requiredThreshold: 1,
+      xdr,
+      pendingChange: null,
+      signatures: [{ signerPublicKey: signerA.publicKey(), signatureXdr: sigXdr }],
+    });
+    prismaMock.accountMember.findMany.mockResolvedValue([
+      { publicKey: signerA.publicKey(), weight: 1 },
+    ]);
+    mockSuccessfulSubmit();
 
     const result = await service.submit('tx1');
 
     expect(result).toEqual({ hash: 'abc123', status: 'submitted' });
-    expect(prismaMock.transaction.update).toHaveBeenCalledWith({
+    expect(txDbMock.transaction.update).toHaveBeenCalledWith({
       where: { id: 'tx1' },
-      data: { status: 'submitted', submittedHash: 'abc123' },
+      data: { status: 'submitted', submittedHash: 'abc123', lastError: null },
+    });
+    // No pendingChange → the roster stays untouched.
+    expect(txDbMock.accountMember.upsert).not.toHaveBeenCalled();
+    expect(txDbMock.multisigAccount.update).not.toHaveBeenCalled();
+  });
+
+  it('refuses to resubmit a failed (spent) envelope', async () => {
+    prismaMock.transaction.findUnique.mockResolvedValue({
+      id: 'tx1',
+      accountId: 'acc1',
+      status: 'failed',
+      requiredThreshold: 1,
+      xdr: 'AAAA',
+      lastError: 'The envelope expired before submission. Propose it again.',
+      signatures: [],
+    });
+
+    await expect(service.submit('tx1')).rejects.toThrow(
+      /failed on-chain and its envelope is spent/,
+    );
+  });
+
+  it('applies a deferred member.add change after on-chain submission', async () => {
+    const xdr = buildUnsignedXdr();
+    const sigXdr = signatureFor(xdr, signerA);
+    prismaMock.transaction.findUnique.mockResolvedValue({
+      id: 'tx1',
+      accountId: 'acc1',
+      status: 'ready',
+      requiredThreshold: 1,
+      xdr,
+      proposedBy: signerA.publicKey(),
+      pendingChange: {
+        kind: 'member.add',
+        publicKey: signerB.publicKey(),
+        weight: 2,
+        role: 'member',
+      },
+      signatures: [{ signerPublicKey: signerA.publicKey(), signatureXdr: sigXdr }],
+    });
+    prismaMock.accountMember.findMany.mockResolvedValue([
+      { publicKey: signerA.publicKey(), weight: 1 },
+    ]);
+    mockSuccessfulSubmit();
+
+    await service.submit('tx1');
+
+    expect(txDbMock.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { publicKey: signerB.publicKey() } }),
+    );
+    expect(txDbMock.accountMember.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          accountId: 'acc1',
+          publicKey: signerB.publicKey(),
+          weight: 2,
+          role: 'member',
+        }),
+      }),
+    );
+    expect(txDbMock.activityLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: 'member.added' }),
+      }),
+    );
+  });
+
+  it('applies a deferred thresholds.set change after on-chain submission', async () => {
+    const xdr = buildUnsignedXdr();
+    const sigXdr = signatureFor(xdr, signerA);
+    prismaMock.transaction.findUnique.mockResolvedValue({
+      id: 'tx1',
+      accountId: 'acc1',
+      status: 'ready',
+      requiredThreshold: 1,
+      xdr,
+      proposedBy: signerA.publicKey(),
+      pendingChange: { kind: 'thresholds.set', low: 1, medium: 2, high: 2 },
+      signatures: [{ signerPublicKey: signerA.publicKey(), signatureXdr: sigXdr }],
+    });
+    prismaMock.accountMember.findMany.mockResolvedValue([
+      { publicKey: signerA.publicKey(), weight: 1 },
+    ]);
+    mockSuccessfulSubmit();
+
+    await service.submit('tx1');
+
+    expect(txDbMock.multisigAccount.update).toHaveBeenCalledWith({
+      where: { id: 'acc1' },
+      data: { low: 1, medium: 2, high: 2 },
     });
   });
 });
