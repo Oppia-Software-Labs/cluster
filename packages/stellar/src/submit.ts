@@ -1,4 +1,4 @@
-import { TransactionBuilder, rpc } from "@stellar/stellar-sdk";
+import { TransactionBuilder, rpc, xdr } from "@stellar/stellar-sdk";
 import { Api } from "@stellar/stellar-sdk/rpc";
 import { getRpcServer } from "./rpc.js";
 
@@ -15,6 +15,11 @@ export interface SubmitOptions {
 export interface SubmitResult {
   hash: string;
   status: Api.GetTransactionStatus;
+  /**
+   * Raw result for FAILED (included-but-rejected) transactions, so callers can
+   * decode the tx/op result codes into a human-readable failure reason.
+   */
+  resultXdr?: xdr.TransactionResult;
 }
 
 /** Default poll cadence + cap → a ~60s (30 × 2000ms) bounded result-polling window. */
@@ -45,8 +50,16 @@ export async function submitSignedXdr(
   const sent = await server.sendTransaction(tx as any);
 
   if (sent.status === "ERROR") {
+    // errorResult is a parsed xdr.TransactionResult; its top-level switch is
+    // the tx result code (txBadSeq, txTooLate, txInsufficientFee, …).
+    let code: string | undefined;
+    try {
+      code = sent.errorResult?.result().switch().name;
+    } catch {
+      // leave undefined — the generic message still identifies the hash
+    }
     throw new Error(
-      `sendTransaction returned ERROR for ${sent.hash}: ${JSON.stringify(sent.errorResult ?? {})}`,
+      `sendTransaction returned ERROR for ${sent.hash}${code ? ` (${code})` : ""}`,
     );
   }
 
@@ -66,7 +79,11 @@ export async function submitSignedXdr(
   for (let attempt = 0; attempt < maxPolls; attempt++) {
     const res = await server.getTransaction(hash);
     if (res.status !== Api.GetTransactionStatus.NOT_FOUND) {
-      return { hash, status: res.status };
+      return {
+        hash,
+        status: res.status,
+        resultXdr: "resultXdr" in res ? res.resultXdr : undefined,
+      };
     }
     if (pollIntervalMs > 0) await sleep(pollIntervalMs);
   }
