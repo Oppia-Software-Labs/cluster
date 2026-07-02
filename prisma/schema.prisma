@@ -94,6 +94,10 @@ model Transaction {
   requiredThreshold Int
   proposedBy        String
   memo              String?
+  /// Off-chain config change (member add/remove, thresholds) applied to the
+  /// roster only after this transaction is submitted on-chain. See
+  /// `configChangeSchema` in @cluster/shared.
+  pendingChange     Json?
   submittedHash     String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
