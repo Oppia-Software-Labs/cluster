@@ -4,6 +4,7 @@ import {
   thresholdLevelSchema,
   transactionStatusSchema,
 } from "../enums";
+import { configChangeSchema } from "./config-change";
 
 /** POST /accounts/:id/transactions */
 export const proposeTransactionSchema = z.object({
@@ -11,6 +12,11 @@ export const proposeTransactionSchema = z.object({
   xdr: z.string().min(1),
   thresholdLevel: thresholdLevelSchema,
   memo: z.string().optional(),
+  /**
+   * For `config` transactions: the roster/threshold change to apply off-chain
+   * once the transaction is submitted on-chain (see configChangeSchema).
+   */
+  pendingChange: configChangeSchema.optional(),
 });
 export type ProposeTransactionDto = z.infer<typeof proposeTransactionSchema>;
 
