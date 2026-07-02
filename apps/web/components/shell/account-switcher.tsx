@@ -25,7 +25,9 @@ export function AccountSwitcher() {
   const { data: accounts } = useAccounts();
 
   const activeId = pathname?.split("/").filter(Boolean)[0];
-  const active = accounts?.find((a) => a.id === activeId);
+  const active = accounts?.find(
+    (a) => a.stellarAccountId === activeId || a.id === activeId,
+  );
   const name = active?.name ?? "Select account";
   const count = accounts?.length ?? 0;
 
@@ -62,7 +64,7 @@ export function AccountSwitcher() {
         </DropdownMenuLabel>
         {count > 0 ? (
           accounts!.map((a) => (
-            <DropdownMenuItem key={a.id} onSelect={() => router.push(`/${a.id}`)}>
+            <DropdownMenuItem key={a.id} onSelect={() => router.push(`/${a.stellarAccountId}`)}>
               <span
                 className="grid size-5 shrink-0 place-items-center rounded-md border border-[var(--hairline)] bg-[var(--surface-2)] text-[9px] font-bold text-[var(--gold)]"
                 aria-hidden
