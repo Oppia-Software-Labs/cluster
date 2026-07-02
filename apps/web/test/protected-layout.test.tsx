@@ -38,14 +38,14 @@ describe("protected dashboard layout", () => {
     replace.mockClear();
   });
 
-  it("redirects to /connect when there is no session", () => {
+  it("redirects to /accounts when there is no session", () => {
     useAuthMock.mockReturnValue({ user: null, isLoading: false });
     render(
       <DashboardLayout params={makeParams("acc123")}>
         <div>secret</div>
       </DashboardLayout>,
     );
-    expect(replace).toHaveBeenCalledWith("/connect");
+    expect(replace).toHaveBeenCalledWith("/accounts");
     expect(screen.queryByText("secret")).not.toBeInTheDocument();
   });
 
