@@ -16,7 +16,9 @@ import {
 } from "@cluster/ui";
 import type { AccountThresholds, ThresholdLevel } from "@cluster/shared";
 
-import { useUpdateThresholds } from "@/lib/queries";
+import { useAuth } from "@/lib/auth";
+import { useProposeAndSign } from "@/lib/transactions.queries";
+import { buildSetThresholdsXdr } from "@/lib/transactions/build-config";
 import { apiError } from "@/lib/api-error";
 
 const LEVELS: { level: ThresholdLevel; help: string }[] = [
@@ -28,22 +30,29 @@ const LEVELS: { level: ThresholdLevel; help: string }[] = [
 /**
  * Edit the low/medium/high thresholds. Client-side guards keep each value
  * within the total signer weight so the account can't lock itself out; the API
- * enforces the same rule authoritatively.
+ * enforces the same rule authoritatively. Saving proposes the on-chain
+ * set_options transaction through the signing pipeline with the new values as
+ * `pendingChange`; the off-chain record updates only once the transaction is
+ * signed and submitted, keeping DB threshold math aligned with the chain.
  */
 export function EditThresholdsDialog({
   accountId,
+  stellarAccountId,
   thresholds,
   totalWeight,
 }: {
   accountId: string;
+  stellarAccountId: string;
   thresholds: AccountThresholds;
   totalWeight: number;
 }) {
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<AccountThresholds>(thresholds);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const update = useUpdateThresholds(accountId);
+  const { user } = useAuth();
+  const propose = useProposeAndSign(accountId, user?.publicKey);
 
   const invalid = LEVELS.some(({ level }) => {
     const v = values[level];
@@ -56,11 +65,23 @@ export function EditThresholdsDialog({
 
   async function submit() {
     setError(null);
+    setBusy(true);
     try {
-      await update.mutateAsync(values);
+      // Build the on-chain envelope and propose it into the pipeline; the API
+      // defers the off-chain update until the transaction submits on-chain.
+      const built = await buildSetThresholdsXdr(stellarAccountId, values);
+      await propose.mutateAsync({
+        type: built.type,
+        xdr: built.xdr,
+        thresholdLevel: built.thresholdLevel,
+        memo: `Thresholds ${values.low}/${values.medium}/${values.high}`,
+        pendingChange: { kind: "thresholds.set", ...values },
+      });
       setOpen(false);
     } catch (e) {
       setError(apiError(e));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -131,11 +152,11 @@ export function EditThresholdsDialog({
             Cancel
           </Button>
           <Button
-            disabled={invalid || update.isPending}
+            disabled={invalid || busy}
             onClick={submit}
             className="bg-[var(--gold)] text-[#0a0a0a] shadow-none hover:bg-[var(--gold-soft)]"
           >
-            {update.isPending ? (
+            {busy ? (
               <>
                 <Loader2 className="size-4 animate-spin" /> Saving…
               </>

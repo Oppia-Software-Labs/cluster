@@ -18,7 +18,9 @@ import {
 } from "@cluster/ui";
 import type { MemberRole } from "@cluster/shared";
 
-import { useAddMember } from "@/lib/queries";
+import { useAuth } from "@/lib/auth";
+import { useProposeAndSign } from "@/lib/transactions.queries";
+import { buildAddMemberXdr } from "@/lib/transactions/build-config";
 import { apiError } from "@/lib/api-error";
 
 const ASSIGNABLE_ROLES: { value: MemberRole; label: string; help: string }[] = [
@@ -28,22 +30,34 @@ const ASSIGNABLE_ROLES: { value: MemberRole; label: string; help: string }[] = [
 
 /**
  * Add-signer dialog. Validates the Stellar public key and a positive weight,
- * then calls the add-member mutation. Closes and resets on success; surfaces
- * API errors (duplicate signer, permission) inline.
+ * then proposes the on-chain set_options config transaction through the
+ * signing pipeline, carrying the roster change as `pendingChange`. The API
+ * applies it to the off-chain roster only once the transaction collects the
+ * high threshold and is submitted on-chain — until then the signer has no
+ * power anywhere. Closes and resets on success; surfaces API errors
+ * (duplicate signer, permission) inline.
  */
-export function AddMemberDialog({ accountId }: { accountId: string }) {
+export function AddMemberDialog({
+  accountId,
+  stellarAccountId,
+}: {
+  accountId: string;
+  stellarAccountId: string;
+}) {
   const [open, setOpen] = useState(false);
   const [publicKey, setPublicKey] = useState("");
   const [weight, setWeight] = useState("1");
   const [role, setRole] = useState<MemberRole>("member");
   const [error, setError] = useState<string | null>(null);
 
-  const add = useAddMember(accountId);
+  const { user } = useAuth();
+  const propose = useProposeAndSign(accountId, user?.publicKey);
+  const [busy, setBusy] = useState(false);
 
   const keyValid = StrKey.isValidEd25519PublicKey(publicKey.trim());
   const weightNum = Number(weight);
   const weightValid = Number.isInteger(weightNum) && weightNum > 0;
-  const canSubmit = keyValid && weightValid && !add.isPending;
+  const canSubmit = keyValid && weightValid && !busy;
 
   function reset() {
     setPublicKey("");
@@ -54,12 +68,29 @@ export function AddMemberDialog({ accountId }: { accountId: string }) {
 
   async function submit() {
     setError(null);
+    setBusy(true);
+    const key = publicKey.trim();
     try {
-      await add.mutateAsync({ publicKey: publicKey.trim(), weight: weightNum, role });
+      // Build the on-chain set_options envelope, then propose it into the
+      // sign/submit pipeline. The roster change rides along as pendingChange
+      // and is applied server-side once the transaction is submitted on-chain.
+      const built = await buildAddMemberXdr(stellarAccountId, {
+        publicKey: key,
+        weight: weightNum,
+      });
+      await propose.mutateAsync({
+        type: built.type,
+        xdr: built.xdr,
+        thresholdLevel: built.thresholdLevel,
+        memo: `Add signer ${key.slice(0, 4)}…${key.slice(-4)}`,
+        pendingChange: { kind: "member.add", publicKey: key, weight: weightNum, role },
+      });
       reset();
       setOpen(false);
     } catch (e) {
       setError(apiError(e));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -83,8 +114,9 @@ export function AddMemberDialog({ accountId }: { accountId: string }) {
         <DialogHeader>
           <DialogTitle>Add a signer</DialogTitle>
           <DialogDescription>
-            Give a Stellar account signing power on this multisig. Weight
-            determines how much it contributes toward each threshold.
+            Propose adding a signer to this multisig. Weight determines how
+            much it contributes toward each threshold. The change takes effect
+            once the current signers approve it on-chain.
           </DialogDescription>
         </DialogHeader>
 
@@ -155,7 +187,7 @@ export function AddMemberDialog({ accountId }: { accountId: string }) {
             onClick={submit}
             className="bg-[var(--gold)] text-[#0a0a0a] shadow-none hover:bg-[var(--gold-soft)]"
           >
-            {add.isPending ? (
+            {busy ? (
               <>
                 <Loader2 className="size-4 animate-spin" /> Adding…
               </>

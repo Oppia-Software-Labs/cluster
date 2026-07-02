@@ -14,32 +14,54 @@ import {
   DialogTrigger,
 } from "@cluster/ui";
 
-import { useRemoveMember } from "@/lib/queries";
+import { useAuth } from "@/lib/auth";
+import { useProposeAndSign } from "@/lib/transactions.queries";
+import { buildRemoveMemberXdr } from "@/lib/transactions/build-config";
 import { apiError } from "@/lib/api-error";
 
 const truncate = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
 
-/** Remove-signer control: icon button that opens a confirmation dialog. */
+/**
+ * Remove-signer control: icon button that opens a confirmation dialog.
+ * Confirming proposes the on-chain weight-0 set_options transaction through
+ * the signing pipeline; the API drops the off-chain record only once the
+ * transaction is submitted on-chain (the member keeps signing power — on both
+ * sides — until then, matching what the chain enforces).
+ */
 export function RemoveMemberButton({
   accountId,
-  memberId,
+  stellarAccountId,
   memberKey,
 }: {
   accountId: string;
-  memberId: string;
+  stellarAccountId: string;
   memberKey: string;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const remove = useRemoveMember(accountId);
+  const [busy, setBusy] = useState(false);
+  const { user } = useAuth();
+  const propose = useProposeAndSign(accountId, user?.publicKey);
 
   async function confirm() {
     setError(null);
+    setBusy(true);
     try {
-      await remove.mutateAsync(memberId);
+      // Build the on-chain envelope and propose it into the pipeline; the API
+      // defers the roster removal until the transaction submits on-chain.
+      const built = await buildRemoveMemberXdr(stellarAccountId, memberKey);
+      await propose.mutateAsync({
+        type: built.type,
+        xdr: built.xdr,
+        thresholdLevel: built.thresholdLevel,
+        memo: `Remove signer ${truncate(memberKey)}`,
+        pendingChange: { kind: "member.remove", publicKey: memberKey },
+      });
       setOpen(false);
     } catch (e) {
       setError(apiError(e));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -59,8 +81,10 @@ export function RemoveMemberButton({
         <DialogHeader>
           <DialogTitle>Remove signer?</DialogTitle>
           <DialogDescription>
-            <span className="font-mono">{truncate(memberKey)}</span> will lose
-            signing power on this account. You can add them back later.
+            This proposes an on-chain change removing{" "}
+            <span className="font-mono">{truncate(memberKey)}</span> as a
+            signer. It takes effect once the other signers approve and it is
+            submitted on-chain.
           </DialogDescription>
         </DialogHeader>
         {error && <p className="text-destructive text-sm">{error}</p>}
@@ -74,10 +98,10 @@ export function RemoveMemberButton({
           </Button>
           <Button
             variant="destructive"
-            disabled={remove.isPending}
+            disabled={busy}
             onClick={confirm}
           >
-            {remove.isPending ? (
+            {busy ? (
               <>
                 <Loader2 className="size-4 animate-spin" /> Removing…
               </>

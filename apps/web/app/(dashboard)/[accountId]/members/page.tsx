@@ -86,7 +86,12 @@ export default function MembersPage() {
               {totalWeight}
             </p>
           </div>
-          {canManage && <AddMemberDialog accountId={accountId} />}
+          {canManage && (
+            <AddMemberDialog
+              accountId={accountId}
+              stellarAccountId={account.stellarAccountId}
+            />
+          )}
         </header>
 
         <ul className="mt-4 flex flex-col gap-2">
@@ -123,7 +128,7 @@ export default function MembersPage() {
                 {removable ? (
                   <RemoveMemberButton
                     accountId={accountId}
-                    memberId={m.id}
+                    stellarAccountId={account.stellarAccountId}
                     memberKey={m.publicKey}
                   />
                 ) : (
@@ -156,6 +161,7 @@ export default function MembersPage() {
           {canManage && (
             <EditThresholdsDialog
               accountId={accountId}
+              stellarAccountId={account.stellarAccountId}
               thresholds={account.thresholds}
               totalWeight={totalWeight}
             />
