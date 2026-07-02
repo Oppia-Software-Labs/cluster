@@ -86,7 +86,9 @@ export function AccountsList({ activeAccountId }: { activeAccountId?: string }) 
   return (
     <div className="flex flex-col gap-3">
       {accounts.map((account, i) => {
-        const active = account.id === activeAccountId;
+        const active =
+          account.stellarAccountId === activeAccountId ||
+          account.id === activeAccountId;
         return (
           <div
             key={account.id}
@@ -97,7 +99,7 @@ export function AccountsList({ activeAccountId }: { activeAccountId?: string }) 
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <Link
-              href={`/${account.id}`}
+              href={`/${account.stellarAccountId}`}
               className="flex min-w-0 flex-1 items-center gap-4"
             >
               <span
@@ -128,7 +130,7 @@ export function AccountsList({ activeAccountId }: { activeAccountId?: string }) 
             </Badge>
             <CopyAddress address={account.stellarAccountId} />
             <Link
-              href={`/${account.id}`}
+              href={`/${account.stellarAccountId}`}
               aria-label={`Open ${account.name}`}
               className="grid size-8 place-items-center text-muted-foreground"
             >

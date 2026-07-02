@@ -10,8 +10,8 @@ import { Topbar } from "@/components/shell/topbar";
 /**
  * Protected dashboard layout (Member 1 — app shell chrome).
  * Reads the session via useAuth (Member 1 · sub-project D). Redirects to
- * /connect when there is no session; otherwise renders sidebar + topbar +
- * {children}.
+ * /accounts (which hosts the connect-wallet flow) when there is no session;
+ * otherwise renders sidebar + topbar + {children}.
  */
 export default function DashboardLayout({
   children,
@@ -34,7 +34,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace("/connect");
+      router.replace("/accounts");
     }
   }, [isLoading, user, router]);
 

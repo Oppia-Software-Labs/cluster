@@ -53,7 +53,9 @@ export async function buildPaymentXdr(
     builder = builder.addMemo(Memo.text(draft.memo));
   }
 
-  const tx = builder.setTimeout(180).build();
+  // The envelope must outlive the signature-collection window — other signers
+  // may take hours to approve. 24h, matching the config builders.
+  const tx = builder.setTimeout(24 * 60 * 60).build();
 
   return { xdr: tx.toXDR(), type: "payment", thresholdLevel: "medium" };
 }

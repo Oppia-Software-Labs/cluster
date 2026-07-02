@@ -103,7 +103,9 @@ describe("Transaction", () => {
       status: "pending",
       requiredThreshold: 2,
       proposedBy: "GABC",
+      memo: null,
       submittedHash: null,
+      lastError: null,
     };
     expect(transactionSchema.parse(read)).toEqual(read);
   });

@@ -7,9 +7,10 @@ import { StrKey } from "@stellar/stellar-sdk";
 
 import { Button, Input, cn } from "@cluster/ui";
 
+import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/queries";
 import { useBalances } from "@/lib/assets.queries";
-import { useProposeTransaction } from "@/lib/transactions.queries";
+import { useProposeAndSign } from "@/lib/transactions.queries";
 import { buildPaymentXdr, type PaymentDraft } from "@/lib/transactions/build-payment";
 import { apiError } from "@/lib/api-error";
 
@@ -21,9 +22,10 @@ export default function SendPage({
   params: Promise<{ accountId: string }>;
 }) {
   const { accountId } = use(params);
+  const { user } = useAuth();
   const { data: account } = useAccount(accountId);
   const { data: balancesData } = useBalances(accountId);
-  const propose = useProposeTransaction(accountId);
+  const propose = useProposeAndSign(accountId, user?.publicKey);
 
   const balances = balancesData?.balances ?? [];
   const [assetIdx, setAssetIdx] = useState(0);
@@ -31,7 +33,9 @@ export default function SendPage({
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [proposedId, setProposedId] = useState<string | null>(null);
+  const [proposed, setProposed] = useState<{ id: string; signed: boolean } | null>(
+    null,
+  );
 
   const selected = balances[assetIdx];
   const destValid = StrKey.isValidEd25519PublicKey(destination.trim());
@@ -62,19 +66,19 @@ export default function SendPage({
         memo: memo.trim() || undefined,
       };
       const built = await buildPaymentXdr(draft);
-      const tx = await propose.mutateAsync({
+      const { tx, signed } = await propose.mutateAsync({
         type: built.type,
         xdr: built.xdr,
         thresholdLevel: built.thresholdLevel,
         memo: draft.memo,
       });
-      setProposedId(tx.id);
+      setProposed({ id: tx.id, signed });
     } catch (e) {
       setError(apiError(e));
     }
   }
 
-  if (proposedId) {
+  if (proposed) {
     return (
       <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-4 py-10 text-center">
         <div className="grid size-14 place-items-center rounded-2xl border border-[var(--signal)]/30 bg-[var(--surface)]">
@@ -84,11 +88,12 @@ export default function SendPage({
           Payment proposed
         </h1>
         <p className="text-muted-foreground max-w-sm text-sm">
-          It’s now pending signatures from the account’s signers. Once the
-          medium threshold is met it can be submitted on-chain.
+          {proposed.signed
+            ? "Signed with your wallet. It is submitted on-chain automatically the moment the required signatures are collected — track it in Activity."
+            : "Your wallet didn’t sign it yet — you can sign from the Activity page. It is submitted automatically once enough signatures are collected."}
         </p>
         <p className="text-muted-foreground font-mono text-xs">
-          tx {truncate(proposedId)}
+          tx {truncate(proposed.id)}
         </p>
         <div className="mt-2 flex gap-3">
           <Button asChild variant="outline" className="border-[var(--hairline)] bg-transparent">
@@ -96,7 +101,7 @@ export default function SendPage({
           </Button>
           <Button
             onClick={() => {
-              setProposedId(null);
+              setProposed(null);
               setDestination("");
               setAmount("");
               setMemo("");

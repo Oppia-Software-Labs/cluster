@@ -5,6 +5,7 @@ import {
   History,
   Image,
   LayoutDashboard,
+  Link2,
   Send,
   Settings,
   TrendingUp,
@@ -50,6 +51,7 @@ export const navRegistry: NavEntry[] = [
   { label: "Activity", href: "/activity", icon: Activity },
   { label: "History", href: "/history", icon: History },
   { label: "Coins", href: "/coins", icon: Coins },
+  { label: "Trustlines", href: "/trustlines", icon: Link2 },
   { label: "NFTs", href: "/nfts", icon: Image },
   { label: "Cashflow", href: "/cashflow", icon: TrendingUp },
 ];

@@ -11,16 +11,19 @@ import {
 } from "../src/enums";
 
 describe("TransactionType", () => {
-  it("accepts payment | config | trade", () => {
+  it("accepts payment | config | trade | trustline", () => {
     expect(transactionTypeSchema.parse("payment")).toBe("payment");
     expect(transactionTypeSchema.parse("config")).toBe("config");
     expect(transactionTypeSchema.parse("trade")).toBe("trade");
+    expect(transactionTypeSchema.parse("trustline")).toBe("trustline");
   });
   it("rejects unknown values", () => {
     expect(() => transactionTypeSchema.parse("swap")).toThrow();
   });
   it("infers to the exported type", () => {
-    expectTypeOf<TransactionType>().toEqualTypeOf<"payment" | "config" | "trade">();
+    expectTypeOf<TransactionType>().toEqualTypeOf<
+      "payment" | "config" | "trade" | "trustline"
+    >();
   });
 });
 

@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 /** Transaction category. Extensible: add new members as builders are added. */
-export const transactionTypeSchema = z.enum(["payment", "config", "trade"]);
+export const transactionTypeSchema = z.enum([
+  "payment",
+  "config",
+  "trade",
+  "trustline",
+]);
 export type TransactionType = z.infer<typeof transactionTypeSchema>;
 
 /** Lifecycle status of a pending multisig transaction. */

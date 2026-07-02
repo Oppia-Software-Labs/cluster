@@ -20,7 +20,8 @@ export type CreateTransactionDto = z.infer<typeof createTransactionSchema>;
 
 /**
  * Read shape: status + resolved numeric requiredThreshold + optional
- * submittedHash (null until submitted).
+ * submittedHash (null until submitted). `memo` surfaces the human-readable
+ * intent (e.g. "Add signer GABC…XYZW") in transaction lists.
  */
 export const transactionSchema = z.object({
   id: z.string().min(1),
@@ -30,6 +31,9 @@ export const transactionSchema = z.object({
   status: transactionStatusSchema,
   requiredThreshold: z.number().int().nonnegative(),
   proposedBy: z.string().min(1),
+  memo: z.string().nullable(),
   submittedHash: z.string().nullable(),
+  /** Decoded reason for the last on-chain failure; null unless status=failed. */
+  lastError: z.string().nullable(),
 });
 export type Transaction = z.infer<typeof transactionSchema>;
