@@ -6,6 +6,7 @@ import type {
   BalanceAsset,
 } from '@cluster/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { accountWhere } from '../common/account-ref';
 
 const BALANCE_CACHE_TTL_MS = 30_000;
 
@@ -29,7 +30,7 @@ export class AssetsService {
 
   async getBalances(accountId: string): Promise<AccountBalancesResponse> {
     const account = await this.loadAccount(accountId);
-    const cached = await this.readCachedBalances(accountId);
+    const cached = await this.readCachedBalances(account.id);
     if (cached) {
       return cached;
     }
@@ -46,7 +47,7 @@ export class AssetsService {
     // TODO(M3+): enumerate SAC / Soroban token balances beyond classic trustlines.
     await this.prisma.balanceSnapshot.createMany({
       data: balances.map((b) => ({
-        accountId,
+        accountId: account.id,
         assetCode: b.assetCode,
         assetIssuer: b.assetIssuer,
         amount: b.amount,
@@ -79,7 +80,7 @@ export class AssetsService {
 
   private async loadAccount(accountId: string) {
     const account = await this.prisma.multisigAccount.findUnique({
-      where: { id: accountId },
+      where: accountWhere(accountId),
     });
     if (!account) {
       throw new NotFoundException(`Account ${accountId} not found`);

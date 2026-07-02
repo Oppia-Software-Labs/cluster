@@ -15,6 +15,7 @@ import type {
   AccountMember,
 } from '@cluster/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { accountWhere } from '../common/account-ref';
 
 // Prisma rows include the flat threshold columns + relations; the API surface
 // uses the nested `@cluster/shared` shapes. These helpers map between them so
@@ -125,7 +126,7 @@ export class AccountsService {
     requesterPublicKey: string,
   ): Promise<MultisigAccountWithMembers> {
     const row = await this.prisma.multisigAccount.findUnique({
-      where: { id: accountId },
+      where: accountWhere(accountId),
       include: { members: true },
     });
     if (!row) {
@@ -141,7 +142,7 @@ export class AccountsService {
     requesterPublicKey: string,
   ): Promise<AccountMember[]> {
     const row = await this.prisma.multisigAccount.findUnique({
-      where: { id: accountId },
+      where: accountWhere(accountId),
       include: { members: true },
     });
     if (!row) {
@@ -178,7 +179,7 @@ export class AccountsService {
       });
       await tx.accountMember.create({
         data: {
-          accountId,
+          accountId: row.id,
           publicKey: dto.publicKey,
           weight: dto.weight,
           // Only the account creator holds `owner`; new signers cannot claim it.
@@ -187,14 +188,14 @@ export class AccountsService {
       });
       await tx.activityLog.create({
         data: {
-          accountId,
+          accountId: row.id,
           actor: requesterPublicKey,
           action: 'member.added',
           metadata: { publicKey: dto.publicKey, weight: dto.weight, role: dto.role },
         },
       });
       return tx.multisigAccount.findUniqueOrThrow({
-        where: { id: accountId },
+        where: { id: row.id },
         include: { members: true },
       });
     });
@@ -229,14 +230,14 @@ export class AccountsService {
       await tx.accountMember.delete({ where: { id: memberId } });
       await tx.activityLog.create({
         data: {
-          accountId,
+          accountId: row.id,
           actor: requesterPublicKey,
           action: 'member.removed',
           metadata: { publicKey: target.publicKey },
         },
       });
       return tx.multisigAccount.findUniqueOrThrow({
-        where: { id: accountId },
+        where: { id: row.id },
         include: { members: true },
       });
     });
@@ -268,19 +269,19 @@ export class AccountsService {
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.multisigAccount.update({
-        where: { id: accountId },
+        where: { id: row.id },
         data: { low: thresholds.low, medium: thresholds.medium, high: thresholds.high },
       });
       await tx.activityLog.create({
         data: {
-          accountId,
+          accountId: row.id,
           actor: requesterPublicKey,
           action: 'thresholds.updated',
           metadata: { ...thresholds },
         },
       });
       return tx.multisigAccount.findUniqueOrThrow({
-        where: { id: accountId },
+        where: { id: row.id },
         include: { members: true },
       });
     });
@@ -294,7 +295,7 @@ export class AccountsService {
     requesterPublicKey: string,
   ): Promise<AccountRow> {
     const row = await this.prisma.multisigAccount.findUnique({
-      where: { id: accountId },
+      where: accountWhere(accountId),
       include: { members: true },
     });
     if (!row) {
