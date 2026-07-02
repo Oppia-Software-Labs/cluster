@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
+  ArrowUpRight,
+  CheckCircle2,
   Loader2,
   Plus,
   ShieldAlert,
@@ -39,7 +41,16 @@ type DraftMember = { publicKey: string; weight: number; isCreator: boolean };
 
 const truncate = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
 
+const STEP_LABELS: Record<Step, string> = {
+  name: "name",
+  members: "signers",
+  thresholds: "thresholds",
+  review: "review",
+  done: "done",
+};
+
 export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) {
+  const router = useRouter();
   const { user } = useAuth();
   const createAccount = useCreateAccount();
 
@@ -177,16 +188,35 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
       <DialogTrigger asChild>
         {trigger ?? <Button>Create multisig account</Button>}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md border-[var(--hairline)]">
         <DialogHeader>
-          <DialogTitle>
+          {step !== "done" && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--gold)]">
+              step {stepIndex + 1}/{ORDER.length} · {STEP_LABELS[step]}
+            </p>
+          )}
+          <DialogTitle className="font-[family-name:var(--font-display)] tracking-tight">
             {step === "done" ? "Account created" : "Create multisig account"}
           </DialogTitle>
           <DialogDescription>
             {step === "done"
               ? "Your multisig account is live on mainnet."
-              : `Step ${stepIndex + 1} of ${ORDER.length}`}
+              : "Signing rules are enforced on-chain by Stellar itself."}
           </DialogDescription>
+          {step !== "done" && (
+            <div className="mt-2 flex gap-1.5" aria-hidden>
+              {ORDER.map((s, i) => (
+                <span
+                  key={s}
+                  className={
+                    i <= stepIndex
+                      ? "h-1 flex-1 rounded-full bg-[var(--gold)]"
+                      : "h-1 flex-1 rounded-full bg-[var(--surface-2)]"
+                  }
+                />
+              ))}
+            </div>
+          )}
         </DialogHeader>
 
         {step === "name" && (
@@ -210,13 +240,19 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
               {members.map((m) => (
                 <div
                   key={m.publicKey}
-                  className="border-border flex items-center gap-2 rounded-md border p-2"
+                  className="flex items-center gap-2 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2"
                 >
+                  <span
+                    className="grid size-8 shrink-0 place-items-center rounded-lg border border-[var(--hairline)] bg-[var(--surface-2)] font-mono text-[10px] font-semibold text-[var(--gold)]"
+                    aria-hidden
+                  >
+                    {m.publicKey.slice(1, 3).toUpperCase()}
+                  </span>
                   <span className="flex-1 truncate font-mono text-xs">
                     {truncate(m.publicKey)}
                   </span>
                   {m.isCreator && (
-                    <Badge variant="secondary" className="text-[10px]">
+                    <Badge className="border-transparent bg-[var(--surface-2)] text-[10px] text-muted-foreground">
                       you
                     </Badge>
                   )}
@@ -225,7 +261,7 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
                     min={1}
                     value={m.weight}
                     onChange={(e) => setMemberWeight(m.publicKey, e.target.value)}
-                    className="h-8 w-16"
+                    className="h-8 w-16 font-mono"
                     aria-label="weight"
                   />
                   <Button
@@ -274,8 +310,16 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
               operation. High covers admin changes (members &amp; thresholds).
             </p>
             {(["low", "medium", "high"] as const).map((level) => (
-              <div key={level} className="flex items-center justify-between gap-3">
-                <label className="text-sm capitalize">{level}</label>
+              <div
+                key={level}
+                className="flex items-center justify-between gap-3 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-3"
+              >
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium capitalize">{level}</label>
+                  <span className="text-muted-foreground font-mono text-[11px]">
+                    max {totalWeight}
+                  </span>
+                </div>
                 <Input
                   type="number"
                   min={1}
@@ -287,7 +331,7 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
                       [level]: Math.floor(Number(e.target.value) || 0),
                     }))
                   }
-                  className="w-24"
+                  className="w-24 font-mono"
                 />
               </div>
             ))}
@@ -307,7 +351,7 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
 
         {step === "review" && (
           <div className="flex flex-col gap-3">
-            <div className="border-border flex flex-col gap-2 rounded-md border p-3 text-sm">
+            <div className="flex flex-col gap-2 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-3 text-sm">
               <Row label="Name" value={name} />
               <Row label="Signers" value={`${members.length} (weight ${totalWeight})`} />
               <Row
@@ -323,7 +367,7 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
                 step="0.5"
                 value={startingBalance}
                 onChange={(e) => setStartingBalance(e.target.value)}
-                className="w-28"
+                className="w-28 font-mono"
               />
             </div>
             <button
@@ -347,8 +391,8 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
 
         {step === "done" && result && (
           <div className="flex flex-col items-center gap-3 py-2 text-center">
-            <div className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
-              <Check className="size-6" />
+            <div className="grid size-14 place-items-center rounded-2xl border border-[var(--signal)]/30 bg-[var(--surface)]">
+              <CheckCircle2 className="size-7 text-[var(--signal)]" />
             </div>
             <p className="font-mono text-xs">{truncate(result.stellarAccountId)}</p>
             <p className="text-muted-foreground text-sm">
@@ -361,7 +405,24 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
 
         <DialogFooter>
           {step === "done" ? (
-            <Button onClick={() => onOpenChange(false)}>Done</Button>
+            <div className="flex w-full items-center justify-between gap-3">
+              <Button
+                variant="outline"
+                className="border-[var(--hairline)] bg-transparent"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setOpen(false);
+                  router.push(`/${result!.stellarAccountId}`);
+                }}
+                className="bg-[var(--gold)] text-[#0a0a0a] shadow-none hover:bg-[var(--gold-soft)]"
+              >
+                Open account <ArrowUpRight className="size-4" />
+              </Button>
+            </div>
           ) : (
             <div className="flex w-full items-center justify-between">
               <Button
@@ -373,12 +434,20 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
                 <ArrowLeft className="size-4" /> Back
               </Button>
               {step === "review" ? (
-                <Button onClick={submit} disabled={!canAdvance.review}>
+                <Button
+                  onClick={submit}
+                  disabled={!canAdvance.review}
+                  className="bg-[var(--gold)] text-[#0a0a0a] shadow-none hover:bg-[var(--gold-soft)]"
+                >
                   {submitting && <Loader2 className="size-4 animate-spin" />}
                   {submitting ? "Creating…" : "Create account"}
                 </Button>
               ) : (
-                <Button onClick={goNext} disabled={!canAdvance[step]}>
+                <Button
+                  onClick={goNext}
+                  disabled={!canAdvance[step]}
+                  className="bg-[var(--gold)] text-[#0a0a0a] shadow-none hover:bg-[var(--gold-soft)]"
+                >
                   Next <ArrowRight className="size-4" />
                 </Button>
               )}
