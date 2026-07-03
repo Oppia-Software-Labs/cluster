@@ -4,10 +4,14 @@ import {
   transactionStatusSchema,
   thresholdLevelSchema,
   memberRoleSchema,
+  confidentialOpSchema,
+  confidentialRegStatusSchema,
   type TransactionType,
   type TransactionStatus,
   type ThresholdLevel,
   type MemberRole,
+  type ConfidentialOp,
+  type ConfidentialRegStatus,
 } from "../src/enums";
 
 describe("TransactionType", () => {
@@ -18,13 +22,52 @@ describe("TransactionType", () => {
     expect(transactionTypeSchema.parse("trustline")).toBe("trustline");
     expect(transactionTypeSchema.parse("vault_deposit")).toBe("vault_deposit");
     expect(transactionTypeSchema.parse("vault_withdraw")).toBe("vault_withdraw");
+    expect(transactionTypeSchema.parse("confidential")).toBe("confidential");
   });
   it("rejects unknown values", () => {
     expect(() => transactionTypeSchema.parse("swap")).toThrow();
   });
   it("infers to the exported type", () => {
     expectTypeOf<TransactionType>().toEqualTypeOf<
-      "payment" | "config" | "trade" | "trustline" | "vault_deposit" | "vault_withdraw"
+      | "payment"
+      | "config"
+      | "trade"
+      | "trustline"
+      | "vault_deposit"
+      | "vault_withdraw"
+      | "confidential"
+    >();
+  });
+});
+
+describe("ConfidentialOp", () => {
+  it("accepts register | deposit | merge | transfer | withdraw", () => {
+    for (const v of ["register", "deposit", "merge", "transfer", "withdraw"]) {
+      expect(confidentialOpSchema.parse(v)).toBe(v);
+    }
+  });
+  it("rejects unknown values", () => {
+    expect(() => confidentialOpSchema.parse("swap")).toThrow();
+  });
+  it("infers to the exported type", () => {
+    expectTypeOf<ConfidentialOp>().toEqualTypeOf<
+      "register" | "deposit" | "merge" | "transfer" | "withdraw"
+    >();
+  });
+});
+
+describe("ConfidentialRegStatus", () => {
+  it("accepts pending | registered", () => {
+    for (const v of ["pending", "registered"]) {
+      expect(confidentialRegStatusSchema.parse(v)).toBe(v);
+    }
+  });
+  it("rejects unknown values", () => {
+    expect(() => confidentialRegStatusSchema.parse("done")).toThrow();
+  });
+  it("infers to the exported type", () => {
+    expectTypeOf<ConfidentialRegStatus>().toEqualTypeOf<
+      "pending" | "registered"
     >();
   });
 });

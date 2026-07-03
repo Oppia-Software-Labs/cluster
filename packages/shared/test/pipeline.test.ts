@@ -25,6 +25,25 @@ describe("ProposeTransactionDto", () => {
     };
     expect(proposeTransactionSchema.parse(value)).toEqual(value);
   });
+  it("parses a valid payload with confidentialOp", () => {
+    const value = {
+      type: "confidential",
+      xdr: "AAAA",
+      thresholdLevel: "high",
+      confidentialOp: "transfer",
+    };
+    expect(proposeTransactionSchema.parse(value)).toEqual(value);
+  });
+  it("rejects an unknown confidentialOp", () => {
+    expect(() =>
+      proposeTransactionSchema.parse({
+        type: "confidential",
+        xdr: "AAAA",
+        thresholdLevel: "high",
+        confidentialOp: "swap",
+      }),
+    ).toThrow();
+  });
   it("rejects a missing xdr", () => {
     expect(() =>
       proposeTransactionSchema.parse({ type: "payment", thresholdLevel: "low" }),

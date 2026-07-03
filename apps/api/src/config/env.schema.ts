@@ -22,6 +22,17 @@ export const envSchema = z.object({
   STELLAR_TESTNET_RPC_URL: z.string().url().optional(),
   /** Server-held DeFindex API key — never sent to the browser. */
   DEFINDEX_API_KEY: z.string().min(1),
+  /**
+   * Confidential-token contract IDs (Stellar testnet). These are the deployed
+   * confidential-token, ZK verifier, and auditor contracts respectively.
+   */
+  CONFIDENTIAL_TOKEN_CONTRACT_ID: z.string().length(56).optional(),
+  CONFIDENTIAL_VERIFIER_CONTRACT_ID: z.string().length(56).optional(),
+  CONFIDENTIAL_AUDITOR_CONTRACT_ID: z.string().length(56).optional(),
+  /** Stellar Asset Contract (SAC) for the underlying token being wrapped. */
+  CONFIDENTIAL_UNDERLYING_SAC: z.string().length(56).optional(),
+  /** Index of the auditor key in the on-chain auditor registry. */
+  CONFIDENTIAL_AUDITOR_ID: z.coerce.number().int().nonnegative().default(0),
 });
 
 export type Env = z.infer<typeof envSchema>;
