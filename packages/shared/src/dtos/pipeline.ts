@@ -4,6 +4,7 @@ import {
   thresholdLevelSchema,
   transactionStatusSchema,
   networkSchema,
+  confidentialOpSchema,
 } from "../enums";
 import { configChangeSchema } from "./config-change";
 
@@ -20,6 +21,11 @@ export const proposeTransactionSchema = z.object({
    * once the transaction is submitted on-chain (see configChangeSchema).
    */
   pendingChange: configChangeSchema.optional(),
+  /**
+   * For `confidential` transactions: the specific confidential-token operation
+   * this transaction performs (see confidentialOpSchema).
+   */
+  confidentialOp: confidentialOpSchema.optional(),
 });
 export type ProposeTransactionDto = z.infer<typeof proposeTransactionSchema>;
 

@@ -10,4 +10,5 @@ export * from "./dtos/signature";
 export * from "./dtos/transaction-detail";
 export * from "./dtos/assets";
 export * from "./dtos/defindex";
+export * from "./dtos/confidential";
 export * from "./dtos/notifications";

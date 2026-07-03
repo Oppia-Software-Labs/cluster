@@ -15,6 +15,7 @@ enum TransactionType {
   trustline
   vault_deposit
   vault_withdraw
+  confidential
 }
 
 enum TransactionStatus {

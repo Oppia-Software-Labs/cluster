@@ -8,8 +8,23 @@ export const transactionTypeSchema = z.enum([
   "trustline",
   "vault_deposit",
   "vault_withdraw",
+  "confidential",
 ]);
 export type TransactionType = z.infer<typeof transactionTypeSchema>;
+
+/** Specific confidential-token operation carried by a `confidential` transaction. */
+export const confidentialOpSchema = z.enum([
+  "register",
+  "deposit",
+  "merge",
+  "transfer",
+  "withdraw",
+]);
+export type ConfidentialOp = z.infer<typeof confidentialOpSchema>;
+
+/** Registration status of an account's confidential-token setup. */
+export const confidentialRegStatusSchema = z.enum(["pending", "registered"]);
+export type ConfidentialRegStatus = z.infer<typeof confidentialRegStatusSchema>;
 
 /**
  * Stellar network a transaction targets. Cluster operates on mainnet by
