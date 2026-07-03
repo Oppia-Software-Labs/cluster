@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AddSignatureDto,
+  PendingSignaturesResponse,
   ProposeTransactionDto,
   Signature,
   SubmitTransactionResponse,
@@ -10,6 +11,26 @@ import type {
 import { passphraseFor } from "./stellar-network";
 import { http } from "./http";
 import { signWithWallet } from "./transactions/sign";
+
+/**
+ * Pending transactions, across every account the signed-in user belongs to,
+ * that are still missing their signature — backs the notifications bell's
+ * badge. Polled rather than invalidated-only, since a co-signer proposing a
+ * new transaction is something this user's own actions can't trigger a
+ * refetch for.
+ */
+export function usePendingSignatures() {
+  return useQuery({
+    queryKey: ["pending-signatures"],
+    queryFn: async () => {
+      const { data } = await http.get<PendingSignaturesResponse>(
+        "/transactions/pending-for-me",
+      );
+      return data;
+    },
+    refetchInterval: 30_000,
+  });
+}
 
 export function useAccountTransactions(accountId: string) {
   return useQuery({
@@ -93,6 +114,7 @@ export function useProposeAndSign(accountId: string, signerPublicKey?: string) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", accountId] });
+      queryClient.invalidateQueries({ queryKey: ["pending-signatures"] });
     },
   });
 }
@@ -114,6 +136,7 @@ export function useAddSignature(transactionId: string, accountId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transaction", transactionId] });
+      queryClient.invalidateQueries({ queryKey: ["pending-signatures"] });
       if (accountId) {
         queryClient.invalidateQueries({ queryKey: ["transactions", accountId] });
       }
