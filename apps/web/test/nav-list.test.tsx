@@ -19,9 +19,9 @@ describe("NavList", () => {
 
   it("prefixes hrefs with the accountId", () => {
     render(<NavList accountId="acc123" />);
-    expect(screen.getByText("Settings").closest("a")).toHaveAttribute(
+    expect(screen.getByText("Members").closest("a")).toHaveAttribute(
       "href",
-      "/acc123/settings",
+      "/acc123/members",
     );
   });
 });

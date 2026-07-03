@@ -35,11 +35,11 @@ describe("shell smoke render", () => {
     renderWithClient(<Sidebar accountId="acc123" />);
     expect(screen.getByText("Cluster")).toBeInTheDocument();
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByText("Members")).toBeInTheDocument();
   });
 
   it("renders the topbar notifications and wallet menu", () => {
-    render(<Topbar />);
+    renderWithClient(<Topbar />);
     expect(
       screen.getByRole("button", { name: /notifications/i }),
     ).toBeInTheDocument();
