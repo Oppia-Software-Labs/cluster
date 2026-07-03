@@ -2,6 +2,7 @@ import {
   Activity,
   ArrowLeftRight,
   Coins,
+  EyeOff,
   LayoutDashboard,
   Link2,
   ShieldCheck,
@@ -49,4 +50,6 @@ export const navRegistry: NavEntry[] = [
   { label: "Invest", href: "/invest", icon: Vault },
   // ZK confidential — holder selective-disclosure flow.
   { label: "Disclose", href: "/disclose", icon: ShieldCheck },
+  // M4 — confidential token (testnet).
+  { label: "Confidential", href: "/confidential", icon: EyeOff },
 ];

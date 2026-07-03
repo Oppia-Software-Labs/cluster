@@ -105,6 +105,7 @@ export class TransactionsService {
         network: dto.network ?? getStellarNetwork(),
         pendingChange: dto.pendingChange,
         confidentialOp: dto.confidentialOp,
+        confidentialPayload: dto.confidentialPayload,
       },
     });
 
@@ -588,6 +589,7 @@ export class TransactionsService {
       submittedHash: tx.submittedHash,
       lastError: tx.lastError,
       confidentialOp: tx.confidentialOp,
+      confidentialPayload: tx.confidentialPayload,
     };
   }
 

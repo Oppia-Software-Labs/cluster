@@ -26,6 +26,11 @@ export const proposeTransactionSchema = z.object({
    * this transaction performs (see confidentialOpSchema).
    */
   confidentialOp: confidentialOpSchema.optional(),
+  /**
+   * For `confidential` transfer proposals: the opaque signer-decryptable
+   * payload; server-blind passthrough.
+   */
+  confidentialPayload: z.string().optional(),
 });
 export type ProposeTransactionDto = z.infer<typeof proposeTransactionSchema>;
 

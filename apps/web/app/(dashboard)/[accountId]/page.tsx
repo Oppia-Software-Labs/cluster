@@ -1,3 +1,7 @@
+"use client";
+
+import { use } from "react";
+
 import {
   Tabs,
   TabsContent,
@@ -6,43 +10,18 @@ import {
 } from "@cluster/ui";
 
 import { AccountsList } from "@/components/accounts/accounts-list";
+import { BalanceChart } from "@/components/overview/balance-chart";
+import { CoinsTable } from "@/components/overview/coins-table";
+import { StatCards } from "@/components/overview/stat-cards";
+import { TotalBalance } from "@/components/overview/total-balance";
 
-/** Empty labeled placeholder for a widget another member owns. */
-function Slot({
-  id,
-  owner,
-  children,
-  className = "",
+export default function OverviewPage({
+  params,
 }: {
-  id: string;
-  owner: string;
-  children: React.ReactNode;
-  className?: string;
+  params: Promise<{ accountId: string }>;
 }) {
-  return (
-    <div
-      data-testid={id}
-      className={`flex min-h-24 items-center justify-center rounded-xl border border-dashed border-[var(--hairline)] bg-[var(--surface)]/40 p-4 text-center text-xs text-muted-foreground ${className}`}
-    >
-      <span>
-        {children}
-        <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] opacity-50">
-          {owner}
-        </span>
-      </span>
-    </div>
-  );
-}
+  const { accountId } = use(params);
 
-/**
- * Overview page — Member 1 ships LAYOUT + labeled SLOTS only.
- * Data widgets are owned by other members:
- *   Total Balance / chart / stat cards → M3 (assets)
- *   Accounts/Members/Threshold        → M2
- *   Trade action                      → M4
- * Do NOT implement their data here; compose their widgets into these slots.
- */
-export default function OverviewPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div>
@@ -62,16 +41,10 @@ export default function OverviewPage() {
               all assets
             </span>
           </div>
-          <Slot id="slot-total-balance" owner="M3">
-            Total balance figure
-          </Slot>
-          <Slot id="slot-balance-chart" owner="M3" className="min-h-40">
-            Balance chart
-          </Slot>
+          <TotalBalance accountId={accountId} />
+          <BalanceChart accountId={accountId} />
         </section>
-        <Slot id="slot-stat-cards" owner="M3" className="min-h-40 rounded-2xl">
-          Stat cards
-        </Slot>
+        <StatCards accountId={accountId} />
       </div>
 
       <Tabs defaultValue="accounts" className="gap-4">
@@ -81,18 +54,20 @@ export default function OverviewPage() {
           <TabsTrigger value="nfts">NFTs</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
-          {/* M2 (Point 4): the user's multisig accounts + create flow. */}
           <AccountsList />
         </TabsContent>
         <TabsContent value="coins">
-          <Slot id="slot-coins-table" owner="M3">
-            Coins table
-          </Slot>
+          <CoinsTable accountId={accountId} />
         </TabsContent>
         <TabsContent value="nfts">
-          <Slot id="slot-nfts-table" owner="M3">
-            NFTs table
-          </Slot>
+          <div
+            data-testid="slot-nfts-table"
+            className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-[var(--hairline)] bg-[var(--surface)]/40 p-8 text-center"
+          >
+            <p className="text-muted-foreground text-sm">
+              No NFTs found for this account.
+            </p>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
