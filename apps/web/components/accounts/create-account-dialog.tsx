@@ -7,7 +7,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
-  Droplet,
   Loader2,
   Plus,
   ShieldAlert,
@@ -35,7 +34,6 @@ import {
   createMultisigOnChain,
   suggestedStartingBalance,
 } from "@/lib/accounts/create-multisig";
-import { fundWithFriendbot } from "@/lib/accounts/friendbot";
 
 type Step = "name" | "members" | "thresholds" | "review" | "done";
 const ORDER: Step[] = ["name", "members", "thresholds", "review"];
@@ -73,9 +71,6 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
   const [startingBalance, setStartingBalance] = useState("2.0");
   const [newKey, setNewKey] = useState("");
   const [newWeight, setNewWeight] = useState("1");
-  const [funding, setFunding] = useState(false);
-  const [funded, setFunded] = useState(false);
-  const [fundError, setFundError] = useState<string | null>(null);
 
   // Reset to a clean draft whenever the dialog opens, seeding the creator as the
   // first signer (they cannot be removed — they own the account).
@@ -91,23 +86,6 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
     setStartingBalance("2.0");
     setNewKey("");
     setNewWeight("1");
-    setFunding(false);
-    setFunded(false);
-    setFundError(null);
-  }
-
-  async function fundCreator() {
-    if (!user) return;
-    setFunding(true);
-    setFundError(null);
-    try {
-      await fundWithFriendbot(user.publicKey);
-      setFunded(true);
-    } catch (e) {
-      setFundError(e instanceof Error ? e.message : "Funding failed.");
-    } finally {
-      setFunding(false);
-    }
   }
 
   function onOpenChange(next: boolean) {
@@ -402,40 +380,6 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
             >
               Use suggested minimum
             </button>
-            {STELLAR_NETWORK === "testnet" && (
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-3">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Your wallet</span>
-                  <span className="text-muted-foreground font-mono text-[11px]">
-                    Must exist on-chain to fund this account. New testnet
-                    wallets need Friendbot first.
-                  </span>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={funding}
-                  onClick={fundCreator}
-                  className="border-[var(--hairline)] bg-transparent hover:bg-[var(--surface-2)]"
-                >
-                  {funding ? (
-                    <>
-                      <Loader2 className="size-3.5 animate-spin" /> Funding…
-                    </>
-                  ) : funded ? (
-                    <>
-                      <CheckCircle2 className="size-3.5 text-[var(--signal)]" /> Funded
-                    </>
-                  ) : (
-                    <>
-                      <Droplet className="size-3.5" /> Fund with Friendbot
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-            {fundError && <p className="text-destructive text-xs">{fundError}</p>}
             <div className="border-destructive/40 bg-destructive/10 text-destructive flex gap-2 rounded-md border p-3 text-xs">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
               <span>
