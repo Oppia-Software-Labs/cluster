@@ -7,6 +7,8 @@ export type Vault = {
   network: "testnet" | "mainnet";
   /** Decimal places of the underlying asset contract (all three are Stellar Asset Contracts → 7). */
   decimals: number;
+  /** Path under /public to the asset's logo (see apps/web/public/vaults). */
+  logo: string;
 };
 
 /**
@@ -28,6 +30,7 @@ export const vaults: Vault[] = [
     address: "CCJZMNP4NDOHZ5DFIQRCJJ6EG5RSE3XANYLK5KOPNLEHQOD6OHSG7EL5",
     network: "testnet",
     decimals: 7,
+    logo: "/vaults/usdc.svg",
   },
   {
     name: "Neko XLM Vault",
@@ -37,6 +40,7 @@ export const vaults: Vault[] = [
     address: "CAZ5R5YAABR7ZZAWJNJUMY26U3HIFAMXRZBKS6FEPACHC5EZJLAX33FU",
     network: "testnet",
     decimals: 7,
+    logo: "/vaults/xlm.svg",
   },
   {
     name: "Neko CETES Vault",
@@ -46,5 +50,6 @@ export const vaults: Vault[] = [
     address: "CA75UCZSDPZVFC3RK26LM54SYF3RVQ5PJMVUZYE3SQVNZTB653UETWB4",
     network: "testnet",
     decimals: 7,
+    logo: "/vaults/cetes.svg",
   },
 ];
