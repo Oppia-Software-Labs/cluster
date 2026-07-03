@@ -34,3 +34,20 @@ export type BuildVaultWithdrawXdrDto = z.infer<
 export type BuildVaultWithdrawXdrResponse = {
   xdr: string;
 };
+
+/** GET /defindex/vault/:address/balance?from=...&network=... */
+export const getVaultBalanceQuerySchema = z.object({
+  /** Stellar address holding (or not yet holding) vault shares. */
+  from: z.string().min(1),
+  /** Network the vault lives on. Defaults to the API's STELLAR_NETWORK. */
+  network: networkSchema.optional(),
+});
+export type GetVaultBalanceQueryDto = z.infer<
+  typeof getVaultBalanceQuerySchema
+>;
+
+/** Raw stroop amounts as strings, one entry per underlying asset. */
+export type VaultBalanceResponse = {
+  dfTokens: string;
+  underlyingBalance: string[];
+};
