@@ -8,6 +8,8 @@ export {
 
 export { getRpcUrl, getRpcServer } from "./rpc.js";
 
+export { getHorizonUrl } from "./horizon.js";
+
 export { submitSignedXdr, type SubmitOptions, type SubmitResult } from "./submit.js";
 
 export {
