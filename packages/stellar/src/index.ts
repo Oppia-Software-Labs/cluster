@@ -50,3 +50,14 @@ export {
   type BuildInvocationInput,
   type BuiltInvocation,
 } from "./soroban.js";
+
+export {
+  buildRegisterTx,
+  buildDepositTx,
+  buildMergeTx,
+  buildTransferTx,
+  buildWithdrawTx,
+  type ConfidentialOp,
+  type ConfidentialBuilt,
+  type ConfidentialTxBase,
+} from "./builders/confidential.js";
