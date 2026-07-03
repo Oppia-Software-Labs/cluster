@@ -377,6 +377,101 @@ describe('TransactionsService.propose (pendingChange guards)', () => {
   });
 });
 
+describe('TransactionsService.propose confidential spend serialization', () => {
+  const account = {
+    id: 'acc_1',
+    network: 'mainnet',
+    low: 1,
+    medium: 2,
+    high: 3,
+    members: [{ publicKey: 'GPROP', role: 'owner', weight: 1 }],
+  };
+  let service: TransactionsService;
+  const prismaMock = {
+    multisigAccount: { findUnique: jest.fn() },
+    transaction: { findFirst: jest.fn(), create: jest.fn() },
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    prismaMock.multisigAccount.findUnique.mockResolvedValue(account);
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        TransactionsService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
+    }).compile();
+    service = moduleRef.get(TransactionsService);
+  });
+
+  const spendDto = {
+    type: 'confidential' as const,
+    xdr: 'x',
+    thresholdLevel: 'medium' as const,
+    confidentialOp: 'transfer' as const,
+  };
+
+  it('REJECTS a spend op with 409 when a confidential tx is pending/ready', async () => {
+    prismaMock.transaction.findFirst.mockResolvedValue({ id: 'tx_open' });
+    await expect(service.propose('acc_1', spendDto, 'GPROP')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    // Guard queried for an OPEN confidential row on this account.
+    const where = prismaMock.transaction.findFirst.mock.calls[0][0].where;
+    expect(where.accountId).toBe('acc_1');
+    expect(where.type).toBe('confidential');
+    expect(where.status).toEqual({ in: ['pending', 'ready'] });
+    expect(prismaMock.transaction.create).not.toHaveBeenCalled();
+  });
+
+  it('ALLOWS a spend op when no confidential tx is open', async () => {
+    prismaMock.transaction.findFirst.mockResolvedValue(null);
+    prismaMock.transaction.create.mockResolvedValue({
+      id: 'tx_new',
+      accountId: 'acc_1',
+      type: 'confidential',
+      xdr: 'x',
+      status: 'pending',
+      requiredThreshold: 2,
+      proposedBy: 'GPROP',
+      memo: null,
+      network: 'mainnet',
+      submittedHash: null,
+      lastError: null,
+      confidentialOp: 'transfer',
+    });
+    await service.propose('acc_1', spendDto, 'GPROP');
+    expect(prismaMock.transaction.create).toHaveBeenCalled();
+    expect(prismaMock.transaction.create.mock.calls[0][0].data.confidentialOp).toBe(
+      'transfer',
+    );
+  });
+
+  it('EXEMPTS deposit — never consults the guard, always allowed', async () => {
+    prismaMock.transaction.create.mockResolvedValue({
+      id: 'tx_dep',
+      accountId: 'acc_1',
+      type: 'confidential',
+      xdr: 'x',
+      status: 'pending',
+      requiredThreshold: 2,
+      proposedBy: 'GPROP',
+      memo: null,
+      network: 'mainnet',
+      submittedHash: null,
+      lastError: null,
+      confidentialOp: 'deposit',
+    });
+    await service.propose(
+      'acc_1',
+      { ...spendDto, confidentialOp: 'deposit' },
+      'GPROP',
+    );
+    expect(prismaMock.transaction.findFirst).not.toHaveBeenCalled();
+    expect(prismaMock.transaction.create).toHaveBeenCalled();
+  });
+});
+
 describe('TransactionsService.submit', () => {
   let service: TransactionsService;
   const txDbMock = {

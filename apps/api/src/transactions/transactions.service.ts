@@ -39,6 +39,11 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { accountWhere, assertActiveNetwork } from '../common/account-ref';
 
+/** Confidential ops whose proof binds the current `spendable` commitment; two
+ * concurrent ones invalidate each other (§6.8). register/deposit credit
+ * `receiving` and are exempt. */
+const CONFIDENTIAL_SPEND_OPS = new Set(['merge', 'transfer', 'withdraw']);
+
 @Injectable()
 export class TransactionsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -75,6 +80,14 @@ export class TransactionsService {
       this.assertChangeProposable(account, proposedBy, dto);
     }
 
+    if (
+      dto.type === 'confidential' &&
+      dto.confidentialOp &&
+      CONFIDENTIAL_SPEND_OPS.has(dto.confidentialOp)
+    ) {
+      await this.assertNoOpenConfidentialSpend(account.id);
+    }
+
     const requiredThreshold = this.resolveRequiredThreshold(
       account,
       dto.thresholdLevel,
@@ -91,6 +104,7 @@ export class TransactionsService {
         memo: dto.memo,
         network: dto.network ?? getStellarNetwork(),
         pendingChange: dto.pendingChange,
+        confidentialOp: dto.confidentialOp,
       },
     });
 
@@ -157,6 +171,26 @@ export class TransactionsService {
         }
         break;
       }
+    }
+  }
+
+  /**
+   * A confidential spend proof binds the account's current `spendable`
+   * commitment; a second concurrent spend would invalidate the first. Enforce
+   * at most one OPEN (pending/ready) confidential transaction per account.
+   * Incoming register/deposit are exempt — they credit `receiving`, which is
+   * exactly why the protocol keeps two balances (§4.5, §6.8).
+   */
+  private async assertNoOpenConfidentialSpend(accountId: string): Promise<void> {
+    const open = await this.prisma.transaction.findFirst({
+      where: { accountId, type: 'confidential', status: { in: ['pending', 'ready'] } },
+    });
+    if (open) {
+      throw new ConflictException(
+        'This account already has a confidential transaction awaiting signatures. ' +
+          'A spend proof binds the current balance, so only one can be in flight at a ' +
+          'time — wait for it to submit or fail, then propose again.',
+      );
     }
   }
 
@@ -553,6 +587,7 @@ export class TransactionsService {
       network: toNetwork(tx.network),
       submittedHash: tx.submittedHash,
       lastError: tx.lastError,
+      confidentialOp: tx.confidentialOp,
     };
   }
 
