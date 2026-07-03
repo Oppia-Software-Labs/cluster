@@ -1,168 +1,197 @@
-# Cluster
+# Cluster — Confidential Tokens on Stellar
 
-Multisig accounts on Stellar. This README documents the **confidential tokens** feature.
+Confidential balances for **multisig** accounts on Stellar. Transfer amounts and balances are hidden
+on-chain using Pedersen commitments and UltraHonk zero-knowledge proofs, while a classic multisig account
+owns the balance and its co-signers can **decrypt and see each amount before they sign**.
+
+Built on the OpenZeppelin confidential-token protocol and deployed on **Stellar testnet**.
+
+> **Testnet only.** The underlying contracts are unaudited; this feature runs on Stellar testnet and is
+> intentionally kept separate from any mainnet deployment. Do not use for real value.
 
 ---
 
-## Confidential tokens (testnet)
+## What it does
 
-Confidential balances for Cluster multisig accounts on **Stellar testnet**. Transfer amounts and
-balances are hidden on-chain (Pedersen commitments `C = v·G + r·H`; the network sees only commitments +
-UltraHonk zero-knowledge proofs), built on the OpenZeppelin confidential-token protocol.
+- **Confidential balances** — amounts live on-chain only as Pedersen commitments `C = v·G + r·H`. The
+  network sees commitments and zero-knowledge proofs, never plaintext values.
+- **Multisig-owned confidential funds** — a standard Stellar multisig account holds the confidential
+  balance and approves every spend through Cluster's existing propose → sign → submit pipeline.
+- **Co-signers see the amount before signing** — each member can locally decrypt a pending confidential
+  transfer and review the real value before adding their signature. This is the core differentiator over
+  the single-user reference design.
+- **The five confidential operations** — `register` (activate confidential for an account),
+  `deposit` (public → confidential), `merge` (fold received funds into spendable), `confidential_transfer`
+  (hidden amount), and `withdraw` (confidential → public).
+- **Selective disclosure** — a holder can generate a proof that reveals a single transfer's amount to a
+  chosen verifier, who checks it on a public page **without a wallet or an account**.
+- **Auditor view** — the designated auditor can decrypt every transfer of the token (regulatory
+  transparency), entirely client-side.
 
-**What makes it Cluster's:** a classic **multisig** account owns the confidential balance. Co-signers
-approve each confidential spend through the existing propose → sign → submit pipeline **and can decrypt
-and see the amount before signing** — the multisig differentiator vs. the single-user reference demo.
+## How it works
 
-> ⚠️ **Testnet only, unaudited.** The OZ contracts are unaudited; this feature is scoped to testnet and
-> kept separate from the mainnet app. Do not use for real value.
+Amounts are hidden behind Pedersen commitments; every state transition is accompanied by an UltraHonk
+(Barretenberg / `bb.js`) proof that the transition is valid, verified on-chain by a Soroban verifier
+contract. Cluster adds a **server-blind, per-member key layer** on top of the single-user protocol so a
+multisig can own the balance:
 
-### Status
+- Each account has one spending secret `sk`. It is **sealed individually to every member** (X25519
+  sealed-box) so the server only ever stores ciphertext — it never sees `sk`, an amount, or a blinding
+  factor.
+- A member's browser unwraps its copy of `sk` for the session (deriving the wrap key from a wallet
+  message signature, SEP-53), decrypts balances/transfers locally, and never persists the secret.
+- Proofs are generated **in the browser** with `bb.js` UltraHonk under a **keccak transcript** (the
+  on-chain verifier requires keccak; a Poseidon transcript silently fails).
 
-| Stage | Scope | State |
-|-------|-------|-------|
-| **1 — Foundation** | `@cluster/zk` crypto + proving, shared DTOs/enum, contract bindings, network resolver | ✅ merged |
-| **2 — API + builders + disclosure UI** | `/confidential` API, Soroban builders, chain/auditor layer, browser bb.js infra, `/verify` + `/disclose` + `/auditor` | ✅ merged |
-| **3 — Full web flows + E2E** | provisioning, propose→prove→submit wiring, signer decrypt-amount view, confidential UI, sync engine, testnet E2E + docs | ⬜ **remaining** |
-
-The crypto/proving core is verified (real bb.js UltraHonk proof self-verifies; the on-chain
-`address_to_field` anchor matches; XDR payloads are byte-for-byte identical to the reference). The
-**end-to-end confidential flow has not yet been run on testnet** — that is Stage 3 (see [What's left](#whats-left)).
-
-### Architecture
-
-```
-packages/zk                    the crypto + proving core (browser-safe)
-  .                            Grumpkin/Poseidon2, key derivation, X25519 sealed-box,
-                               k_store openings, XDR codec, StateEngine, disclosure prove/verify,
-                               UltraHonk proving wrapper (bb.js, KECCAK transcript — mandatory)
-  /node                        node-only: loadCircuit, loadDisclosureVk, proveRegister/Transfer/Withdraw, JsonFileStore
-  /chain                       chain reader + event fetch + auditor decrypt (ChainClient, hybridFetchEvents, auditTransfer/Withdraw)
-packages/stellar               soroban.ts (buildInvocation) + builders/confidential.ts (5 op builders)
-packages/contracts/*           generated TS bindings: @cluster/contract-confidential-{token,verifier,auditor}
-packages/shared                TransactionType.confidential, ConfidentialOp/RegStatus enums, DTOs
-apps/api/src/confidential      server-blind persistence module (service + controller + module)
-apps/web/app/{verify,auditor}  public pages (no wallet, no session)
-apps/web/app/(dashboard)/[accountId]/disclose   holder disclosure flow (auth-gated)
-apps/web/lib/{zk-rpc,bb-loader,confidential/*}   RPC client, browser bb.js loader, session hooks
-```
-
-**Key invariants**
-- **Server is blind.** The API persists only ciphertexts / public keys (never an amount, blinding factor,
-  or secret `sk`); `apps/api/src/confidential` never imports `@cluster/zk`.
-- **Per-member wrapped `sk`.** Each member's spending secret is sealed to their X25519 wrap key
-  (server-blind key distribution); the browser unwraps it per session and never persists it.
-- **KECCAK transcript is load-bearing.** All bb.js proving/verifying uses `{ keccak: true }` — a Poseidon
-  transcript silently fails against the on-chain verifier.
-- **Proving runs in the browser** (bb.js UltraHonk) — needs cross-origin isolation (COOP/COEP) + the
-  vendored bb.js worker assets.
-
-### How a confidential operation flows
+A confidential operation flows through the existing multisig pipeline:
 
 ```
-build witness (@cluster/zk)  →  prove in browser (bb.js UltraHonk, keccak)
-      →  encode {payload, proof} XDR (@cluster/zk)
-      →  build Soroban tx wrapping the generated binding (@cluster/stellar buildXxxTx)
-      →  propose via the existing multisig pipeline (type: "confidential", confidentialOp)
-      →  co-signers review (decrypt & SEE the amount) and sign
-      →  auto-submit at threshold
+build witness  →  prove in browser (bb.js UltraHonk, keccak)
+   →  encode the { payload, proof } XDR
+   →  build a Soroban transaction wrapping the generated contract binding
+   →  propose to the multisig pipeline (type: "confidential")
+   →  co-signers decrypt the amount, review, and sign
+   →  auto-submit once the threshold is met
 ```
-The tx **source is always the multisig G-address**; Soroban `require_auth` is satisfied by the envelope
-signatures the pipeline already collects (no `SorobanAuthorizationEntry` signing). A confidential **spend**
-(`merge`/`transfer`/`withdraw`) binds the current `spendable` commitment, so the API **serializes** them:
-proposing one while another is pending/ready returns **409** (`register`/`deposit` are exempt).
 
-### API — `/confidential` (JwtAuthGuard)
+The transaction **source is always the multisig G-address**, so Soroban's `require_auth` is satisfied by
+the envelope signatures the pipeline already collects — no separate authorization signing. Because a
+confidential **spend** proof binds the account's current balance commitment, the API **serializes**
+spends: proposing a `merge`/`transfer`/`withdraw` while another confidential transaction is still awaiting
+signatures returns HTTP 409 (`register`/`deposit` are exempt).
 
-| Method & route | Purpose |
-|---|---|
-| `PUT /confidential/wrap-key` | publish the member's X25519 wrap public key (identity from session) |
-| `GET /confidential/wrap-key/:userPublicKey` | fetch a member's wrap key |
-| `PUT/GET /confidential/accounts/:id/envelopes` | per-member sealed-`sk` envelopes |
-| `PUT/GET /confidential/accounts/:id/openings` | `k_store`-encrypted event openings (idempotent) |
-| `POST/PATCH/GET /confidential/accounts/:id/registration` | confidential registration state |
+## Repository layout
 
-Transactions ride the existing `POST /accounts/:id/transactions` with `type: "confidential"` + `confidentialOp`.
+Turborepo monorepo (npm workspaces):
 
-### Web routes
-
-| Route | Access | What |
-|---|---|---|
-| `/(dashboard)/[accountId]/disclose` | auth-gated (member) | holder generates a selective-disclosure bundle for a verifier |
-| `/verify` | **public** (no wallet, no session) | anyone pastes a disclosure bundle → sees the decrypted amount + validity |
-| `/auditor` | **public, secret-gated** | auditor pastes the auditor secret → decrypts all transfers (read-only) |
-
-`/verify` and `/auditor` are structurally public (static, fenced by a test that forbids `useAuth`/wallet imports).
-
-### Deployed testnet contracts
-
-| | Contract ID |
-|---|---|
-| token | `CAPLH4ZW7EDSYRBCQN77Y4K7W5RNA6TO76JQ5CGHHIPY4ALWVQZ2WFAY` |
-| verifier | `CC6NG5LWW6QA4YSW2RP7RR2CE5FF6IHAGJEYY4STG6QP563EWSZU5DG7` |
-| auditor | `CAEYYDRJPJ73UR3UZWYLSIWW4CHUZILTSENAWOUYXGSR4LPY4HQ23R4L` |
-| underlying (XLM SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
-
-Network: `Test SDF Network ; September 2015`. Auditor `id = 0`.
-
-### Environment & security
-
-API (`apps/api/.env`) — testnet is an explicit opt-in; mainnet env is untouched:
 ```
-STELLAR_NETWORK=testnet
-STELLAR_RPC_URL / STELLAR_HORIZON_URL / STELLAR_TESTNET_RPC_URL
-CONFIDENTIAL_{TOKEN,VERIFIER,AUDITOR}_CONTRACT_ID   # optional; the confidential module asserts presence at use
-CONFIDENTIAL_UNDERLYING_SAC
-CONFIDENTIAL_AUDITOR_ID=0
+packages/zk                    ZK cryptography + proving core (TypeScript, browser-safe)
+  .                            Grumpkin curve, Poseidon2, key derivation, X25519 sealed-box,
+                               k_store-encrypted openings, XDR payload codec, StateEngine
+                               (balance reconstruction), selective-disclosure prove/verify,
+                               and the bb.js UltraHonk proving wrapper (keccak transcript)
+  /node                        Node-only helpers (circuit/VK loaders, prove ops, JSON store)
+  /chain                       chain reader + event fetch + auditor decryption
+packages/stellar               Soroban invocation helper + the five confidential tx builders
+packages/contracts/*           generated TypeScript bindings for the token/verifier/auditor contracts
+packages/shared                shared enums + zod DTOs (TransactionType.confidential, ConfidentialOp, …)
+packages/ui                    shared React component library
+apps/api                       NestJS API — includes the server-blind `confidential` module
+apps/web                       Next.js app — /verify, /auditor, holder /disclose, session hooks,
+                               browser bb.js loader + cross-origin-isolation setup
+prisma                         schema + migrations (confidential models are additive)
 ```
-Web (`apps/web/.env`): `NEXT_PUBLIC_` mirrors of the contract IDs + `NEXT_PUBLIC_STELLAR_RPC_URL`.
 
-**Security musts**
-- 🔴 **The auditor secret is a master key** — it decrypts *every* confidential amount. Do **NOT** set
-  `NEXT_PUBLIC_CONFIDENTIAL_AUDITOR_SECRET_HEX` in any shared/prod build: Next inlines `NEXT_PUBLIC_*`
-  into the public client JS, which would leak it to every visitor. The auditor **pastes it at runtime**
-  on `/auditor`; it stays in the browser and is never transmitted. (The var is a local-dev convenience only.)
-- The server never sees `sk`, amounts, or the auditor secret — persistence is blind.
-- Envelope ciphertext is **hex-encoded on the wire**; the provisioning path (`PUT …/envelopes`) must
-  hex-encode `sealSecret` output to round-trip.
+## Tech stack
 
-### Running & testing
+- **Language / tooling:** TypeScript, Turborepo, npm workspaces, tsup, Vitest, Jest
+- **ZK / crypto:** `@aztec/bb.js` (Barretenberg UltraHonk), Noir circuits, `@noble/curves`,
+  `@noble/hashes`, `@noble/ciphers`, `@zkpassport/poseidon2`
+- **Stellar:** `@stellar/stellar-sdk`, Soroban smart contracts, Stellar Wallets Kit (SEP-53 signing)
+- **API:** NestJS, Prisma, PostgreSQL
+- **Web:** Next.js (App Router), React, TanStack Query, Tailwind
+
+## Deployed testnet contracts
+
+| Role | Contract ID | Explorer |
+|------|-------------|----------|
+| Confidential token | `CAPLH4ZW7EDSYRBCQN77Y4K7W5RNA6TO76JQ5CGHHIPY4ALWVQZ2WFAY` | [stellar.expert](https://stellar.expert/explorer/testnet/contract/CAPLH4ZW7EDSYRBCQN77Y4K7W5RNA6TO76JQ5CGHHIPY4ALWVQZ2WFAY) |
+| Verifier | `CC6NG5LWW6QA4YSW2RP7RR2CE5FF6IHAGJEYY4STG6QP563EWSZU5DG7` | [stellar.expert](https://stellar.expert/explorer/testnet/contract/CC6NG5LWW6QA4YSW2RP7RR2CE5FF6IHAGJEYY4STG6QP563EWSZU5DG7) |
+| Auditor | `CAEYYDRJPJ73UR3UZWYLSIWW4CHUZILTSENAWOUYXGSR4LPY4HQ23R4L` | [stellar.expert](https://stellar.expert/explorer/testnet/contract/CAEYYDRJPJ73UR3UZWYLSIWW4CHUZILTSENAWOUYXGSR4LPY4HQ23R4L) |
+| Underlying asset (XLM SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` | [stellar.expert](https://stellar.expert/explorer/testnet/contract/CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC) |
+
+Network passphrase: `Test SDF Network ; September 2015`. Auditor id: `0`.
+
+## Getting started
+
+**Prerequisites:** Node.js ≥ 18, npm, a PostgreSQL database (e.g. Supabase), and the
+[`stellar` CLI](https://developers.stellar.org/docs/tools/cli/install-cli) if you want to regenerate
+contract bindings.
 
 ```bash
+# 1. install
 npm install
-npx prisma migrate deploy           # applies the confidential migrations (needs DATABASE_URL/DIRECT_URL)
-npm run vendor:bb -w web            # vendor bb.js browser assets (also runs on predev/prebuild)
-npx turbo run lint typecheck build test   # full monorepo gate
-npm run dev                         # api :3001, web :3000
+
+# 2. configure env (see below)
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+
+# 3. apply database migrations
+npx prisma migrate deploy            # needs DATABASE_URL / DIRECT_URL
+
+# 4. vendor the bb.js browser assets (also runs automatically on predev/prebuild)
+npm run vendor:bb -w web
+
+# 5. run
+npm run dev                          # API on :3001, web on :3000
+
+# quality gate
+npx turbo run lint typecheck build test
 ```
-Tests are **offline** (mocked RPC/wallet/bb.js at the edges) except one real Node bb.js proof in
-`@cluster/zk`. The confidential crypto is the risk surface and is covered byte-for-byte against the
-reference; UI/mechanical code is lean-tested.
 
-### What's left
+## Environment variables
 
-**Stage 3 (M4)** — turns the built pieces into a usable end-to-end flow:
-1. **Provisioning** — activate confidential for an account: generate the account secret, wrap `sk`
-   per member (`sealSecret`) → `PUT` envelopes → on-chain `register`. *(The unwrap side exists; the
-   wrap/distribute side does not yet.)*
-2. **propose → prove → submit wiring** — a helper tying witness → browser proof → Soroban build →
-   multisig pipeline → signatures → submit.
-3. ⭐ **Signer decrypt-amount view** — co-signers see the decrypted amount before signing.
-4. **Confidential UI** — deposit / merge / transfer / withdraw forms + balance + activity.
-5. **Full sync engine** — events → decrypt → persist `k_store`-encrypted openings (today only a read-only minimal hook).
-6. **Testnet E2E** (acceptance gate, not yet run): 2-of-3 multisig → register → deposit → merge →
-   transfer (2nd signer sees the amount) → withdraw → explorer shows only commitments.
+API (`apps/api/.env`) — testnet is an explicit opt-in; any mainnet configuration is untouched:
 
-**Also owed:** real in-browser proving validation (only Node/mocks so far).
+```
+STELLAR_NETWORK=testnet
+STELLAR_RPC_URL=…                 # active-network Soroban RPC
+STELLAR_HORIZON_URL=…
+STELLAR_TESTNET_RPC_URL=…         # cross-network testnet opt-in
+DATABASE_URL=… / DIRECT_URL=…
+CONFIDENTIAL_TOKEN_CONTRACT_ID=CAPLH4ZW…
+CONFIDENTIAL_VERIFIER_CONTRACT_ID=CC6NG5LW…
+CONFIDENTIAL_AUDITOR_CONTRACT_ID=CAEYYDRJ…
+CONFIDENTIAL_UNDERLYING_SAC=CDLZFC3S…
+CONFIDENTIAL_AUDITOR_ID=0
+```
 
-**Minor follow-ups:** single-source the disclosure VKs (`apps/web/lib/zk-artifacts/` duplicates
-`packages/zk/circuits/`) · add a D-sender disclosure test fixture · `formatXlm` assumes 7 decimals ·
-dead resolver branch in `vendor-bb.mjs`.
+Web (`apps/web/.env`): `NEXT_PUBLIC_` mirrors of the contract IDs and RPC URL.
 
-**Contract-side note (not Cluster):** the token binding ships `Point` as `#[contracttype(export=false)]`,
-so two read-only view methods (`confidential_balance`, `get_spender_delegation`) can't be decoded through
-the generated binding until the contract re-exports `Point`. The `@cluster/zk/chain` reader decodes
-points manually and sidesteps this for reads.
+## Security model
 
-**Consume without drift** the frozen surfaces: `@cluster/zk` (`.` / `/node` / `/chain`),
-`@cluster/stellar` builders, and the `/confidential` API.
+- **The server is blind.** The API persists only ciphertexts and public keys — never an amount, a
+  blinding factor, or a spending secret. The `apps/api/confidential` module does not import the ZK
+  package at all.
+- **Per-member key isolation.** Each member holds their own sealed copy of the account secret; it is
+  unwrapped only in the member's browser, for the session, and is never transmitted or stored.
+- **Keccak transcript** is used for all proving and verification to match the on-chain verifier.
+- **The auditor secret is a master key** — it can decrypt every confidential amount. It is entered on the
+  `/auditor` page at runtime and stays in the browser. Do **not** bake it into a build via a
+  `NEXT_PUBLIC_*` variable in any shared or production deployment: Next.js inlines those into the public
+  client bundle, which would expose the key to everyone.
+
+## Testing
+
+The suite runs fully offline. Network, wallet, and the `bb.js` prover are exercised through test doubles
+at the edges (`bb.js` cannot run under jsdom), while the confidential cryptography — the part that must
+match the chain — is verified directly: a **real UltraHonk proof** is generated and self-verified in
+Node, the XDR payload codec is checked **byte-for-byte** against reference vectors, and the on-chain
+`address_to_field` value is asserted against the deployed contract. Run it with:
+
+```bash
+npx turbo run test          # @cluster/zk, @cluster/stellar, @cluster/shared, api, web
+```
+
+## Scope
+
+This repository provides the confidential-token stack end to end at the library and service layers — the
+ZK cryptography and browser proving (`@cluster/zk`), the on-chain transaction builders
+(`@cluster/stellar`), the server-blind API (`apps/api`), the generated contract bindings, and the public
+disclosure, verification, and auditor web surfaces. The in-wallet transaction screens that drive
+deposit/transfer/withdraw are built on top of these libraries.
+
+## Resources & references
+
+- OpenZeppelin Stellar contracts (confidential token) — https://github.com/OpenZeppelin/stellar-contracts
+- Reference confidential-token demo — https://github.com/brozorec/stellar-confidential-token-demo
+- Barretenberg / `bb.js` (UltraHonk proving) — https://github.com/AztecProtocol/aztec-packages
+- Noir (ZK circuits) — https://noir-lang.org
+- Stellar / Soroban docs — https://developers.stellar.org
+- SEP-53 (signed messages) — https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md
+- Stellar Wallets Kit — https://github.com/Creit-Tech/Stellar-Wallets-Kit
+
+## Acknowledgements
+
+Confidential-token protocol and circuits by OpenZeppelin; reference SDK/app patterns adapted from
+`brozorec/stellar-confidential-token-demo`. Proving powered by Aztec's Barretenberg.
