@@ -25,11 +25,16 @@ export const NETWORK_PASSPHRASE: string =
 /** Human label for the active network, e.g. for chips/menus. */
 export const NETWORK_LABEL = STELLAR_NETWORK === "testnet" ? "Testnet" : "Mainnet";
 
-/** Resolve the passphrase for a per-transaction network override. */
+/**
+ * Resolve the passphrase for a per-transaction network override. When the
+ * transaction doesn't carry an explicit network (payments, trustlines,
+ * config changes — everything except vault flows), it targets the ACTIVE
+ * network, so that passphrase is the default.
+ */
 export function passphraseFor(network: string | null | undefined): string {
-  return network === "testnet"
-    ? TESTNET_NETWORK_PASSPHRASE
-    : MAINNET_NETWORK_PASSPHRASE;
+  if (network === "testnet") return TESTNET_NETWORK_PASSPHRASE;
+  if (network === "mainnet") return MAINNET_NETWORK_PASSPHRASE;
+  return NETWORK_PASSPHRASE;
 }
 
 /**
