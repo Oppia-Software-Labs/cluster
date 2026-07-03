@@ -29,9 +29,10 @@ const DEFAULT_MAX_POLLS = 30;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Submit a fully-signed base64 XDR to mainnet and poll until the result is final.
+ * Submit a fully-signed base64 XDR to the configured network and poll until
+ * the result is final.
  *
- * MAINNET = REAL FUNDS. Only call with an XDR whose signatures already satisfy
+ * ON MAINNET THIS IS REAL FUNDS. Only call with an XDR whose signatures already satisfy
  * the account thresholds (see signatures.isThresholdMet). Submitting an
  * under-signed transaction wastes the base fee and fails on-chain.
  */

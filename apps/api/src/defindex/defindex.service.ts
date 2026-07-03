@@ -4,6 +4,7 @@ import type {
   BuildVaultDepositXdrDto,
   BuildVaultWithdrawXdrDto,
 } from '@cluster/shared';
+import { getStellarNetwork } from '@cluster/stellar';
 import type { Env } from '../config/env.schema';
 
 const DEFINDEX_API_URL = 'https://api.defindex.io';
@@ -16,17 +17,19 @@ export class DefindexService {
 
   /**
    * Ask DeFindex to build an unsigned deposit transaction for an existing
-   * testnet vault. The API key stays server-side; the caller only gets back
-   * the XDR to carry through Cluster's own sign/submit pipeline.
+   * vault on the requested network (default: the active STELLAR_NETWORK).
+   * The API key stays server-side; the caller only gets back the XDR to
+   * carry through Cluster's own sign/submit pipeline.
    */
   async buildDepositXdr(
     vaultAddress: string,
     dto: BuildVaultDepositXdrDto,
   ): Promise<{ xdr: string }> {
     const amountStroops = toStroops(dto.amount);
+    const network = dto.network ?? getStellarNetwork();
 
     const res = await fetch(
-      `${DEFINDEX_API_URL}/vault/${vaultAddress}/deposit?network=testnet`,
+      `${DEFINDEX_API_URL}/vault/${vaultAddress}/deposit?network=${network}`,
       {
         method: 'POST',
         headers: {
@@ -58,16 +61,18 @@ export class DefindexService {
 
   /**
    * Ask DeFindex to build an unsigned withdrawal transaction for an existing
-   * testnet vault (burns vault shares for the underlying asset).
+   * vault on the requested network (burns vault shares for the underlying
+   * asset).
    */
   async buildWithdrawXdr(
     vaultAddress: string,
     dto: BuildVaultWithdrawXdrDto,
   ): Promise<{ xdr: string }> {
     const amountStroops = toStroops(dto.amount);
+    const network = dto.network ?? getStellarNetwork();
 
     const res = await fetch(
-      `${DEFINDEX_API_URL}/vault/${vaultAddress}/withdraw?network=testnet`,
+      `${DEFINDEX_API_URL}/vault/${vaultAddress}/withdraw?network=${network}`,
       {
         method: 'POST',
         headers: {

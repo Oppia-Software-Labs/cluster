@@ -7,13 +7,9 @@ import type {
   Transaction,
   TransactionWithSignatures,
 } from "@cluster/shared";
-import { NETWORK_PASSPHRASE, TESTNET_NETWORK_PASSPHRASE } from "@cluster/stellar";
+import { passphraseFor } from "./stellar-network";
 import { http } from "./http";
 import { signWithWallet } from "./transactions/sign";
-
-function passphraseFor(network: ProposeTransactionDto["network"]): string {
-  return network === "testnet" ? TESTNET_NETWORK_PASSPHRASE : NETWORK_PASSPHRASE;
-}
 
 export function useAccountTransactions(accountId: string) {
   return useQuery({

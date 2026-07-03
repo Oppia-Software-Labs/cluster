@@ -3,7 +3,7 @@ import { Api } from "@stellar/stellar-sdk/rpc";
 import { submitSignedXdr } from "../submit.js";
 import { buildUnsignedXdr, signatureFor, signerA } from "./fixtures.js";
 import { combineSignatures } from "../signatures.js";
-import { NETWORK_PASSPHRASE } from "../network.js";
+import { MAINNET_NETWORK_PASSPHRASE as NETWORK_PASSPHRASE } from "../network.js";
 
 function signedXdr(): string {
   const xdr = buildUnsignedXdr();

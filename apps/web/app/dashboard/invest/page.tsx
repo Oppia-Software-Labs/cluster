@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -51,10 +52,10 @@ export default function DashboardInvestPage() {
         <main className="flex-1 overflow-y-auto p-6">
           {!accountsLoading && !account ? (
             <p className="text-muted-foreground mx-auto max-w-3xl text-sm">
-              You don't have a multisig account yet — create one first from{" "}
-              <a href="/accounts" className="text-[var(--gold)] hover:underline">
+              You don&apos;t have a multisig account yet — create one first from{" "}
+              <Link href="/accounts" className="text-[var(--gold)] hover:underline">
                 Accounts
-              </a>
+              </Link>
               .
             </p>
           ) : (

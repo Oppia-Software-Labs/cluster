@@ -25,26 +25,31 @@ type Mode = "deposit" | "withdraw";
 
 const COPY: Record<
   Mode,
-  { verb: string; verbing: string; icon: typeof PiggyBank; description: string }
+  {
+    verb: string;
+    verbing: string;
+    icon: typeof PiggyBank;
+    description: (networkLabel: string) => string;
+  }
 > = {
   deposit: {
     verb: "Deposit",
     verbing: "Depositing",
     icon: PiggyBank,
-    description:
-      "Proposes a deposit transaction on Stellar testnet. The account's other signers approve it on /activity — it submits on-chain automatically once the threshold is met.",
+    description: (networkLabel) =>
+      `Proposes a deposit transaction on Stellar ${networkLabel}. The account's other signers approve it on /activity — it submits on-chain automatically once the threshold is met.`,
   },
   withdraw: {
     verb: "Withdraw",
     verbing: "Withdrawing",
     icon: ArrowDownToLine,
-    description:
-      "Proposes a withdrawal transaction on Stellar testnet, burning vault shares for the underlying asset. The account's other signers approve it on /activity — it submits on-chain automatically once the threshold is met.",
+    description: (networkLabel) =>
+      `Proposes a withdrawal transaction on Stellar ${networkLabel}, burning vault shares for the underlying asset. The account's other signers approve it on /activity — it submits on-chain automatically once the threshold is met.`,
   },
 };
 
 /**
- * Deposit/withdraw dialog for a DeFindex testnet vault. Builds the unsigned
+ * Deposit/withdraw dialog for a DeFindex vault. Builds the unsigned
  * envelope via the API (which holds the DeFindex key), then proposes it into
  * the same sign/submit pipeline as every other transaction type — it shows
  * up on /activity for the account's other signers to approve.
@@ -56,6 +61,7 @@ export function VaultActionDialog({
   vaultAddress,
   vaultName,
   asset,
+  network,
 }: {
   mode: Mode;
   accountId: string;
@@ -63,6 +69,7 @@ export function VaultActionDialog({
   vaultAddress: string;
   vaultName: string;
   asset: string;
+  network: "testnet" | "mainnet";
 }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -88,7 +95,12 @@ export function VaultActionDialog({
     setBusy(true);
     try {
       const build = mode === "deposit" ? buildVaultDepositXdr : buildVaultWithdrawXdr;
-      const built = await build({ source: stellarAccountId, vaultAddress, amount });
+      const built = await build({
+        source: stellarAccountId,
+        vaultAddress,
+        amount,
+        network,
+      });
       await propose.mutateAsync({
         ...built,
         memo: `${copy.verb} ${amount} ${asset} ${mode === "deposit" ? "into" : "from"} ${vaultName}`,
@@ -128,7 +140,7 @@ export function VaultActionDialog({
           <DialogTitle>
             {copy.verb} {mode === "deposit" ? "into" : "from"} {vaultName}
           </DialogTitle>
-          <DialogDescription>{copy.description}</DialogDescription>
+          <DialogDescription>{copy.description(network)}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">

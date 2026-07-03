@@ -28,6 +28,7 @@ import {
 import type { AccountThresholds } from "@cluster/shared";
 
 import { useAuth } from "@/lib/auth";
+import { NETWORK_LABEL, STELLAR_NETWORK } from "@/lib/stellar-network";
 import { useCreateAccount } from "@/lib/queries";
 import {
   createMultisigOnChain,
@@ -200,7 +201,7 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
           </DialogTitle>
           <DialogDescription>
             {step === "done"
-              ? "Your multisig account is live on mainnet."
+              ? `Your multisig account is live on ${NETWORK_LABEL.toLowerCase()}.`
               : "Signing rules are enforced on-chain by Stellar itself."}
           </DialogDescription>
           {step !== "done" && (
@@ -382,8 +383,18 @@ export function CreateAccountDialog({ trigger }: { trigger?: React.ReactNode }) 
             <div className="border-destructive/40 bg-destructive/10 text-destructive flex gap-2 rounded-md border p-3 text-xs">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
               <span>
-                This funds a brand-new account with <strong>real XLM on mainnet</strong>
-                and disables its master key. It cannot be undone.
+                {STELLAR_NETWORK === "mainnet" ? (
+                  <>
+                    This funds a brand-new account with{" "}
+                    <strong>real XLM on mainnet</strong> and disables its
+                    master key. It cannot be undone.
+                  </>
+                ) : (
+                  <>
+                    This funds a brand-new <strong>testnet</strong> account
+                    and disables its master key. It cannot be undone.
+                  </>
+                )}
               </span>
             </div>
           </div>

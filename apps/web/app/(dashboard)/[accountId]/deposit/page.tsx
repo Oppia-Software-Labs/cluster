@@ -6,6 +6,7 @@ import { Check, Copy, ExternalLink, Info } from "lucide-react";
 import { Button } from "@cluster/ui";
 
 import { useAccount } from "@/lib/queries";
+import { explorerUrl, NETWORK_LABEL } from "@/lib/stellar-network";
 import { AddressQr } from "@/components/deposit/address-qr";
 
 export default function DepositPage({
@@ -78,12 +79,12 @@ export default function DepositPage({
               Stellar
             </span>
             <span className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              Mainnet
+              {NETWORK_LABEL}
             </span>
           </div>
           {address && (
             <a
-              href={`https://stellar.expert/explorer/public/account/${address}`}
+              href={explorerUrl(`account/${address}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[var(--gold)] hover:underline"

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { memberRoleSchema } from "../enums";
+import { memberRoleSchema, networkSchema } from "../enums";
 import { accountMemberSchema } from "./account-member";
 
 /** low/medium/high numeric thresholds (Stellar weights). */
@@ -14,7 +14,7 @@ export type AccountThresholds = z.infer<typeof accountThresholdsSchema>;
 export const updateAccountThresholdsRequestSchema = accountThresholdsSchema;
 export type UpdateAccountThresholdsRequest = AccountThresholds;
 
-/** Input to create a multisig account. network is server-fixed to mainnet. */
+/** Input to create a multisig account. network is server-assigned (STELLAR_NETWORK). */
 export const createMultisigAccountSchema = z.object({
   name: z.string().min(1),
   stellarAccountId: z.string().min(1),
@@ -30,7 +30,7 @@ export const multisigAccountSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   stellarAccountId: z.string().min(1),
-  network: z.literal("mainnet"),
+  network: networkSchema,
   createdBy: z.string().min(1),
   thresholds: accountThresholdsSchema,
 });

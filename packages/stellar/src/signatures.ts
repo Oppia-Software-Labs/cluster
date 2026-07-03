@@ -46,7 +46,7 @@ export function isThresholdMet(
  * Combine collected signatures into the transaction envelope and return the
  * fully-signed base64 XDR ready for submission.
  *
- * - Rebuilds the transaction from `xdr` against the mainnet passphrase.
+ * - Rebuilds the transaction from `xdr` against the given network passphrase.
  * - `Transaction.addSignature` verifies each signature against the tx hash and
  *   throws if it does not match — invalid/mislabeled signatures are rejected.
  * - Signatures are applied in deterministic (public-key-sorted, de-duplicated)

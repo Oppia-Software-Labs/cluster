@@ -13,7 +13,7 @@ import {
   buildSetThresholdsTx,
   type AccountMemberInput,
 } from "../builders/config.js";
-import { NETWORK_PASSPHRASE } from "../network.js";
+import { MAINNET_NETWORK_PASSPHRASE as NETWORK_PASSPHRASE } from "../network.js";
 import { signerA, signerB, signerC } from "./fixtures.js";
 
 const creator = Keypair.random();

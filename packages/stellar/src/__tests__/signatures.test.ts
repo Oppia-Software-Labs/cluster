@@ -7,7 +7,7 @@ import {
   type CollectedSignature,
   type SignerWeights,
 } from "../signatures.js";
-import { NETWORK_PASSPHRASE } from "../network.js";
+import { MAINNET_NETWORK_PASSPHRASE as NETWORK_PASSPHRASE } from "../network.js";
 import { signerA, signerB, signerC, buildUnsignedXdr, signatureFor } from "./fixtures.js";
 
 const weights: SignerWeights = {

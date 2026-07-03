@@ -14,8 +14,9 @@ import type {
   MultisigAccountWithMembers,
   AccountMember,
 } from '@cluster/shared';
+import { getStellarNetwork } from '@cluster/stellar';
 import { PrismaService } from '../prisma/prisma.service';
-import { accountWhere } from '../common/account-ref';
+import { accountWhere, assertActiveNetwork } from '../common/account-ref';
 
 // Prisma rows include the flat threshold columns + relations; the API surface
 // uses the nested `@cluster/shared` shapes. These helpers map between them so
@@ -62,7 +63,7 @@ export class AccountsService {
           data: {
             name: dto.name,
             stellarAccountId: dto.stellarAccountId,
-            network: 'mainnet',
+            network: getStellarNetwork(),
             createdBy: creatorPublicKey,
             low: dto.thresholds.low,
             medium: dto.thresholds.medium,
@@ -110,10 +111,10 @@ export class AccountsService {
     }
   }
 
-  /** Accounts the caller is a member of. */
+  /** Accounts the caller is a member of, on the active network only. */
   async listForUser(publicKey: string): Promise<MultisigAccount[]> {
     const rows = await this.prisma.multisigAccount.findMany({
-      where: { members: { some: { publicKey } } },
+      where: { members: { some: { publicKey } }, network: getStellarNetwork() },
       include: { members: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -132,6 +133,7 @@ export class AccountsService {
     if (!row) {
       throw new NotFoundException('Account not found');
     }
+    assertActiveNetwork(row);
     this.assertMemberOf(row, requesterPublicKey);
     return this.toAccountWithMembers(row);
   }
@@ -148,6 +150,7 @@ export class AccountsService {
     if (!row) {
       throw new NotFoundException('Account not found');
     }
+    assertActiveNetwork(row);
     this.assertMemberOf(row, requesterPublicKey);
     return row.members.map((m) => this.toMember(m));
   }
@@ -301,6 +304,7 @@ export class AccountsService {
     if (!row) {
       throw new NotFoundException('Account not found');
     }
+    assertActiveNetwork(row);
     const me = row.members.find((m) => m.publicKey === requesterPublicKey);
     if (!me) {
       throw new ForbiddenException('Not a member of this account');
@@ -324,7 +328,9 @@ export class AccountsService {
       id: row.id,
       name: row.name,
       stellarAccountId: row.stellarAccountId,
-      network: 'mainnet',
+      // The network the account was CREATED on — not the current env, so a
+      // later STELLAR_NETWORK flip cannot relabel existing accounts.
+      network: row.network === 'testnet' ? 'testnet' : 'mainnet',
       createdBy: row.createdBy,
       thresholds: { low: row.low, medium: row.medium, high: row.high },
     };

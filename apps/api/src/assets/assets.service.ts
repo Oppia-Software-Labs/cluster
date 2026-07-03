@@ -6,7 +6,7 @@ import type {
   BalanceAsset,
 } from '@cluster/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { accountWhere } from '../common/account-ref';
+import { accountWhere, assertActiveNetwork } from '../common/account-ref';
 
 const BALANCE_CACHE_TTL_MS = 30_000;
 
@@ -85,6 +85,7 @@ export class AssetsService {
     if (!account) {
       throw new NotFoundException(`Account ${accountId} not found`);
     }
+    assertActiveNetwork(account);
     return account;
   }
 

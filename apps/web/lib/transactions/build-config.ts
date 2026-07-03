@@ -7,6 +7,7 @@ import {
   type ConfigTxContext,
 } from "@cluster/stellar";
 import type { AccountThresholds, BuiltTransaction } from "@cluster/shared";
+import { NETWORK_PASSPHRASE } from "@/lib/stellar-network";
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL;
 
@@ -34,6 +35,7 @@ async function configCtx(accountPublicKey: string): Promise<ConfigTxContext> {
     accountPublicKey,
     sequence: account.sequenceNumber(),
     timeoutSecs: CONFIG_TX_TIMEOUT_SECS,
+    networkPassphrase: NETWORK_PASSPHRASE,
   };
 }
 

@@ -1,5 +1,5 @@
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
-import { NETWORK_PASSPHRASE } from "@cluster/stellar";
+import { NETWORK_PASSPHRASE } from "@/lib/stellar-network";
 import { getWalletKit } from "@/lib/auth/wallet-kit";
 
 /**
