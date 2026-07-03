@@ -32,6 +32,7 @@ import {
   type NoirInputs,
   type Opening,
 } from "@cluster/zk";
+import type { xdr } from "@stellar/stellar-sdk";
 import {
   buildRegisterTx,
   buildDepositTx,
@@ -59,22 +60,29 @@ export type ConfidentialPayloadV1 = {
   recipient: string;
 };
 
-/** Wrap an XDR-encoded ScVal in a plain Uint8Array for the stellar builders. */
-function scValToBytes(xdr: { toXDR(): Uint8Array }): Uint8Array {
-  return new Uint8Array(xdr.toXDR());
+/**
+ * Unwrap the raw `{ payload, proof }` map XDR from the zk codec's envelope ScVal.
+ *
+ * `@cluster/zk`'s payload encoders return `scvBytes(<XDR of the map>)`; the
+ * stellar builders expect the inner map bytes (they apply their own `scvBytes`
+ * wrap). Using `.toXDR()` here would double-wrap and the contract rejects with
+ * InvalidData (#3507).
+ */
+function envelopeBytes(scVal: xdr.ScVal): Uint8Array {
+  return new Uint8Array(scVal.bytes());
 }
 
 /** Prove `witness.inputs` with `circuit`, encode the on-chain data envelope. */
 async function proveAndEncode<TWitness>(
   circuit: unknown,
   witness: TWitness & { inputs: NoirInputs },
-  encode: (w: TWitness, proof: Uint8Array) => { toXDR(): Uint8Array },
+  encode: (w: TWitness, proof: Uint8Array) => xdr.ScVal,
 ): Promise<Uint8Array> {
   ensureBrowserProver();
   const prover = proverFromArtifact(circuit as never);
   try {
     const { proof } = await prover.prove(witness.inputs);
-    return scValToBytes(encode(witness, proof));
+    return envelopeBytes(encode(witness, proof));
   } finally {
     await prover.destroy();
   }
