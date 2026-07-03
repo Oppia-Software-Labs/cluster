@@ -31,7 +31,6 @@ import {
   proverFromArtifact,
   verifyDisclosure,
   DisclosureVerifyError,
-  pointFromJson,
   toHex32,
   fromHex,
   DISCLOSE_SENDER_CIRCUIT_ID,
