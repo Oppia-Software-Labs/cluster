@@ -2,12 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowDownToLine,
-  CheckCircle2,
-  Hourglass,
-  Loader2,
-} from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, Loader2 } from "lucide-react";
 import { Button, Input } from "@cluster/ui";
 
 import { TestnetBanner } from "@/components/confidential/testnet-banner";
@@ -103,40 +98,6 @@ export default function ConfidentialDepositPage({
             <Link href={`/${accountId}/confidential/activate`}>
               Activate confidential
             </Link>
-          </Button>
-        </section>
-      </div>
-    );
-  }
-
-  if (regReady && registration?.status === "pending") {
-    return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--gold)]">
-            confidential · deposit
-          </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">
-            Deposit
-          </h1>
-        </div>
-        <section className="cl-card flex flex-col items-center gap-4 p-8 text-center">
-          <div className="grid size-14 place-items-center rounded-2xl border border-[var(--gold)]/30 bg-[var(--surface)]">
-            <Hourglass className="size-7 text-[var(--gold)]" />
-          </div>
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
-            Registration pending
-          </h2>
-          <p className="text-muted-foreground max-w-md text-sm">
-            The register transaction is awaiting signatures. Approve it in
-            Activity — once it confirms on-chain, this page unlocks.
-          </p>
-          <Button
-            asChild
-            variant="outline"
-            className="border-[var(--hairline)] bg-transparent"
-          >
-            <Link href={`/${accountId}/activity`}>View activity</Link>
           </Button>
         </section>
       </div>
