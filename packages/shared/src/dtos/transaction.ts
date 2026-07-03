@@ -43,5 +43,6 @@ export const transactionSchema = z.object({
    * type=confidential; null/absent otherwise. Lets the UI label the op.
    */
   confidentialOp: confidentialOpSchema.nullish(),
+  confidentialPayload: z.string().nullish(),
 });
 export type Transaction = z.infer<typeof transactionSchema>;

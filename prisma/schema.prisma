@@ -131,6 +131,12 @@ model Transaction {
   /// label it (register/deposit/merge/transfer/withdraw) WITHOUT decrypting
   /// anything. Null for every non-confidential transaction. See §5.2.
   confidentialOp    ConfidentialOp?
+  /// Opaque client-encrypted blob attached to a confidential proposal so
+  /// co-signers can decrypt the transfer detail (amount/recipient) before
+  /// signing. Base64 JSON envelope; ciphertext inside is XChaCha20-Poly1305
+  /// under the account's k_store — the server never sees plaintext. Null for
+  /// every other transaction.
+  confidentialPayload String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
