@@ -84,22 +84,27 @@ export class AuthService {
     return this.jwt.verify<{ sub: string }>(token);
   }
 
+  // The web app and API are deployed on different sites (vercel.app /
+  // railway.app), so the session cookie must be SameSite=None to be sent
+  // cross-site — and browsers only accept None together with Secure.
+  private cookieOptions() {
+    const secure = process.env.COOKIE_SECURE === 'true';
+    return {
+      httpOnly: true,
+      sameSite: secure ? ('none' as const) : ('lax' as const),
+      secure,
+      path: '/',
+    };
+  }
+
   setSessionCookie(res: Response, token: string): void {
     res.cookie(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.COOKIE_SECURE === 'true',
-      path: '/',
+      ...this.cookieOptions(),
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
   }
 
   clearSessionCookie(res: Response): void {
-    res.clearCookie(SESSION_COOKIE, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.COOKIE_SECURE === 'true',
-      path: '/',
-    });
+    res.clearCookie(SESSION_COOKIE, this.cookieOptions());
   }
 }
