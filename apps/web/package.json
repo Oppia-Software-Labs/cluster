@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "vendor:bb": "node scripts/vendor-bb.mjs",
+    "predev": "npm run vendor:bb",
+    "prebuild": "npm run vendor:bb",
     "dev": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next dev --port 3000",
     "build": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next build",
     "start": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next start --port 3000",
@@ -15,6 +18,7 @@
     "@cluster/shared": "*",
     "@cluster/stellar": "*",
     "@cluster/ui": "*",
+    "@cluster/zk": "*",
     "@creit.tech/stellar-wallets-kit": "^2.4.0",
     "@stellar/stellar-sdk": "15.1.0",
     "@tanstack/react-query": "^5.66.0",
