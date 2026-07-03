@@ -5,6 +5,7 @@ import { Check, Copy, ExternalLink, Vault as VaultIcon } from "lucide-react";
 
 import { Badge, Button } from "@cluster/ui";
 import { vaults } from "@/lib/vaults";
+import { explorerUrl } from "@/lib/stellar-network";
 import { VaultActionDialog } from "@/components/invest/vault-action-dialog";
 
 const truncate = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
@@ -74,7 +75,7 @@ function VaultCard({
 
       <div className="flex items-center justify-between gap-3">
         <a
-          href={`https://stellar.expert/explorer/${vault.network}/contract/${vault.address}`}
+          href={explorerUrl(`contract/${vault.address}`, vault.network)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[var(--gold)] hover:underline"
@@ -90,6 +91,7 @@ function VaultCard({
               vaultAddress={vault.address}
               vaultName={vault.name}
               asset={vault.asset}
+              network={vault.network}
             />
             <VaultActionDialog
               mode="deposit"
@@ -98,6 +100,7 @@ function VaultCard({
               vaultAddress={vault.address}
               vaultName={vault.name}
               asset={vault.asset}
+              network={vault.network}
             />
           </div>
         )}
@@ -128,9 +131,9 @@ export function InvestSection({
           Invest
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          DeFindex vaults available on Stellar testnet. Deposits and
-          withdrawals are proposed through the multisig pipeline — sign off
-          on /activity.
+          DeFindex vaults — each card shows the Stellar network it lives
+          on. Deposits and withdrawals are proposed through the multisig
+          pipeline — sign off on /activity.
         </p>
       </div>
 

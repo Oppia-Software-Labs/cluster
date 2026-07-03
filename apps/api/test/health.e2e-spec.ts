@@ -5,7 +5,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
-// Provide the full §1.4 mainnet-only env matrix with dummy-but-valid values so
+// Provide the full env matrix with dummy-but-valid values so
 // ConfigModule's zod validation passes at boot. The PrismaService override
 // below prevents any real DB connection.
 const TEST_ENV: Record<string, string> = {
@@ -16,7 +16,6 @@ const TEST_ENV: Record<string, string> = {
   JWT_SECRET: 'a-very-long-secret-value-32-characters!',
   COOKIE_SECURE: 'false',
   STELLAR_NETWORK: 'mainnet',
-  NETWORK_PASSPHRASE: 'Public Global Stellar Network ; September 2015',
   STELLAR_RPC_URL: 'https://mainnet.sorobanrpc.com',
   STELLAR_HORIZON_URL: 'https://horizon.stellar.org',
 };

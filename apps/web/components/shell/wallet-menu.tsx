@@ -13,6 +13,7 @@ import {
 } from "@cluster/ui";
 
 import { useAuth } from "@/lib/auth";
+import { NETWORK_LABEL } from "@/lib/stellar-network";
 
 const truncate = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
 
@@ -54,7 +55,7 @@ export function WalletMenu() {
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             Network
           </span>
-          <span className="text-xs font-medium">Stellar - Mainnet</span>
+          <span className="text-xs font-medium">Stellar - {NETWORK_LABEL}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="px-2 py-1.5">

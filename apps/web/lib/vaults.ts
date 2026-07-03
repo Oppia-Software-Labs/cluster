@@ -14,6 +14,10 @@ export type Vault = {
  * (CDSCWE4GLNBYYTES2OCYDFQA2LLY4RBIAX6ZI32VSUXD7GO6HRPO4A32) on Stellar
  * testnet. Manager/emergencyManager/rebalanceManager/feeReceiver all point
  * to GCZSSPNV7G5Q4GD5QE3U5G2RZLTS7A2FHP6NZZZUKC6VDPGITE3MB3PJ.
+ *
+ * Each vault's `network` drives the whole deposit/withdraw path (DeFindex
+ * API query, envelope passphrase, RPC endpoint, explorer links) — add
+ * mainnet vaults here with `network: "mainnet"` when they exist.
  */
 export const vaults: Vault[] = [
   {

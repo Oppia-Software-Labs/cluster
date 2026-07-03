@@ -14,6 +14,7 @@ import type {
   MultisigAccountWithMembers,
   AccountMember,
 } from '@cluster/shared';
+import { getStellarNetwork } from '@cluster/stellar';
 import { PrismaService } from '../prisma/prisma.service';
 import { accountWhere } from '../common/account-ref';
 
@@ -62,7 +63,7 @@ export class AccountsService {
           data: {
             name: dto.name,
             stellarAccountId: dto.stellarAccountId,
-            network: 'mainnet',
+            network: getStellarNetwork(),
             createdBy: creatorPublicKey,
             low: dto.thresholds.low,
             medium: dto.thresholds.medium,
@@ -324,7 +325,9 @@ export class AccountsService {
       id: row.id,
       name: row.name,
       stellarAccountId: row.stellarAccountId,
-      network: 'mainnet',
+      // The network the account was CREATED on — not the current env, so a
+      // later STELLAR_NETWORK flip cannot relabel existing accounts.
+      network: row.network === 'testnet' ? 'testnet' : 'mainnet',
       createdBy: row.createdBy,
       thresholds: { low: row.low, medium: row.medium, high: row.high },
     };

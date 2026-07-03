@@ -6,7 +6,7 @@ import {
   TransactionBuilder,
   BASE_FEE,
 } from "@stellar/stellar-sdk";
-import { NETWORK_PASSPHRASE } from "../network.js";
+import { MAINNET_NETWORK_PASSPHRASE as NETWORK_PASSPHRASE } from "../network.js";
 
 /** Three throwaway signer keypairs. NEVER funded — for offline tests only. */
 export const signerA = Keypair.random();

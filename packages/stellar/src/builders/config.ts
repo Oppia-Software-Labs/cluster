@@ -6,7 +6,7 @@ import {
   xdr,
 } from "@stellar/stellar-sdk";
 import type { BuiltTransaction } from "@cluster/shared";
-import { NETWORK_PASSPHRASE } from "../network.js";
+import { getNetworkPassphrase } from "../network.js";
 import {
   addSignerOp,
   setThresholdsOp,
@@ -36,6 +36,12 @@ export interface CreateAccountTxInput {
   fee?: string;
   /** Transaction timeout in seconds. Defaults to 300. */
   timeoutSecs?: number;
+  /**
+   * Network passphrase to build against. Defaults to the active network's
+   * (STELLAR_NETWORK env). Browser callers must pass it explicitly — env vars
+   * are not inlined inside this package's bundle.
+   */
+  networkPassphrase?: string;
 }
 
 /**
@@ -79,8 +85,8 @@ export function assertThresholdsSatisfiable(
  * Requires TWO signatures before submission: the creator (via wallet) and the
  * new account's master key (held in-app only long enough to sign, then discarded).
  *
- * MAINNET = REAL FUNDS. `assertThresholdsSatisfiable` runs first so a
- * self-locking configuration can never be built.
+ * ON MAINNET THIS IS REAL FUNDS. `assertThresholdsSatisfiable` runs first so
+ * a self-locking configuration can never be built.
  */
 export function buildCreateAccountTx(input: CreateAccountTxInput): string {
   const {
@@ -92,6 +98,7 @@ export function buildCreateAccountTx(input: CreateAccountTxInput): string {
     startingBalance,
     fee = BASE_FEE,
     timeoutSecs = 300,
+    networkPassphrase = getNetworkPassphrase(),
   } = input;
 
   assertThresholdsSatisfiable(members, thresholds);
@@ -99,7 +106,7 @@ export function buildCreateAccountTx(input: CreateAccountTxInput): string {
   const source = new Account(creatorPublicKey, creatorSequence);
   const builder = new TransactionBuilder(source, {
     fee,
-    networkPassphrase: NETWORK_PASSPHRASE,
+    networkPassphrase,
   });
 
   // 1. Creator funds the new account (no op source → defaults to the tx source).
@@ -150,14 +157,22 @@ export interface ConfigTxContext {
   sequence: string;
   fee?: string;
   timeoutSecs?: number;
+  /** Network passphrase. Defaults to the active network's (STELLAR_NETWORK). */
+  networkPassphrase?: string;
 }
 
 function buildConfigTx(ctx: ConfigTxContext, op: xdr.Operation): BuiltTransaction {
-  const { accountPublicKey, sequence, fee = BASE_FEE, timeoutSecs = 300 } = ctx;
+  const {
+    accountPublicKey,
+    sequence,
+    fee = BASE_FEE,
+    timeoutSecs = 300,
+    networkPassphrase = getNetworkPassphrase(),
+  } = ctx;
   const source = new Account(accountPublicKey, sequence);
   const tx = new TransactionBuilder(source, {
     fee,
-    networkPassphrase: NETWORK_PASSPHRASE,
+    networkPassphrase,
   })
     .addOperation(op)
     .setTimeout(timeoutSecs)

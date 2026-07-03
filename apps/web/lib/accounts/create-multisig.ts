@@ -4,9 +4,9 @@ import {
   buildCreateAccountTx,
   getRpcServer,
   submitSignedXdr,
-  NETWORK_PASSPHRASE,
   type AccountMemberInput,
 } from "@cluster/stellar";
+import { NETWORK_PASSPHRASE } from "@/lib/stellar-network";
 import type { AccountThresholds } from "@cluster/shared";
 import { getWalletKit } from "@/lib/auth/wallet-kit";
 
@@ -29,8 +29,9 @@ export interface CreateMultisigResult {
 }
 
 /**
- * Create and configure a native-multisig account on mainnet, then return the
- * details to persist via the API.
+ * Create and configure a native-multisig account on the configured network
+ * (NEXT_PUBLIC_STELLAR_NETWORK), then return the details to persist via the
+ * API.
  *
  * The new account's secret key is generated here and never leaves this function:
  * it signs the bootstrap transaction in memory and is discarded when the call
@@ -60,6 +61,7 @@ export async function createMultisigOnChain(
     members: params.members,
     thresholds: params.thresholds,
     startingBalance: params.startingBalance,
+    networkPassphrase: NETWORK_PASSPHRASE,
   });
 
   // 1. Creator authorizes the funding (createAccount) via their wallet.

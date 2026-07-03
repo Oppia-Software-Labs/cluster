@@ -28,6 +28,7 @@ import {
   getNetworkPassphrase,
   getRpcServer,
   getRpcUrl,
+  getStellarNetwork,
   isThresholdMet,
   submitSignedXdr,
   type CollectedSignature,
@@ -85,7 +86,7 @@ export class TransactionsService {
         requiredThreshold,
         proposedBy,
         memo: dto.memo,
-        network: dto.network ?? 'mainnet',
+        network: dto.network ?? getStellarNetwork(),
         pendingChange: dto.pendingChange,
       },
     });
@@ -294,10 +295,12 @@ export class TransactionsService {
     const passphrase = getNetworkPassphrase(network);
     const signedXdr = combineSignatures(tx.xdr, collected, passphrase);
 
-    // Only override the RPC server for the testnet opt-in path — mainnet
-    // keeps relying on submitSignedXdr's own default (getRpcServer()) so
-    // existing mocks/tests that inject a fake `server` are unaffected.
-    const server = network === 'testnet' ? getRpcServer(getRpcUrl('testnet')) : undefined;
+    // Only override the RPC server when the envelope targets a DIFFERENT
+    // network than the active one (the DeFindex testnet opt-in on mainnet).
+    // Same-network submissions keep relying on submitSignedXdr's own default
+    // (getRpcServer()) so mocks/tests that inject a fake `server` are unaffected.
+    const server =
+      network !== getStellarNetwork() ? getRpcServer(getRpcUrl(network)) : undefined;
 
     let result: Awaited<ReturnType<typeof submitSignedXdr>>;
     try {
@@ -521,7 +524,7 @@ export class TransactionsService {
 /**
  * Narrow the plain-string `network` column (Prisma has no enum for it) to
  * the literal union the pipeline expects. Any unrecognized value defaults to
- * mainnet — the safe choice given "mainnet = real funds".
+ * mainnet so a corrupted row can never silently reroute to testnet and back.
  */
 function toNetwork(value: string): 'mainnet' | 'testnet' {
   return value === 'testnet' ? 'testnet' : 'mainnet';

@@ -20,7 +20,7 @@ import {
   TransactionBuilder,
   BASE_FEE,
 } from '@stellar/stellar-sdk';
-import { NETWORK_PASSPHRASE, submitSignedXdr } from '@cluster/stellar';
+import { MAINNET_NETWORK_PASSPHRASE as NETWORK_PASSPHRASE, submitSignedXdr } from '@cluster/stellar';
 import { TransactionsService } from './transactions.service';
 import { PrismaService } from '../prisma/prisma.service';
 
