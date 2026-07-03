@@ -8,6 +8,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AssetsModule } from './assets/assets.module';
 import { DefindexModule } from './defindex/defindex.module';
+import { ConfidentialModule } from './confidential/confidential.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DefindexModule } from './defindex/defindex.module';
     TransactionsModule,
     AssetsModule,
     DefindexModule,
+    ConfidentialModule,
   ],
   controllers: [AppController],
   providers: [AppService],
