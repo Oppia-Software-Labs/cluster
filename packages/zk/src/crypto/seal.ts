@@ -28,6 +28,9 @@ function sealNonce(ephPub: Uint8Array, recipientPub: Uint8Array): Uint8Array {
  * Returns the 80-byte sealed box (`ephPub ‖ box`). Anonymous and unlinkable.
  */
 export function sealSecret(sk: bigint, wrapPub: Uint8Array): Uint8Array {
+  if (wrapPub.length !== 32) {
+    throw new RangeError("wrapPub must be a 32-byte X25519 public key");
+  }
   const eph = x25519.utils.randomSecretKey();
   const ephPub = x25519.getPublicKey(eph);
   const shared = x25519.getSharedSecret(eph, wrapPub);

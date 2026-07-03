@@ -30,4 +30,15 @@ describe("encryptOpening / decryptOpening", () => {
     expect(decryptOpening(a, K_STORE)).toEqual(OPENING);
     expect(decryptOpening(b, K_STORE)).toEqual(OPENING);
   });
+
+  it("throws when the ciphertext is tampered", () => {
+    const blob = encryptOpening(OPENING, K_STORE);
+    blob[40] = blob[40]! ^ 0x01; // flip a byte inside the ciphertext (past the 24-byte nonce)
+    expect(() => decryptOpening(blob, K_STORE)).toThrow();
+  });
+
+  it("throws when encrypting with a wrong-length k_store", () => {
+    const shortKey = new Uint8Array(16).fill(0x42);
+    expect(() => encryptOpening(OPENING, shortKey)).toThrow();
+  });
 });

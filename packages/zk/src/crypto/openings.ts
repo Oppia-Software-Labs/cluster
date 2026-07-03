@@ -18,6 +18,9 @@ import { toBytes32BE, fromBytesBE } from "./field.js";
 
 /** Encrypt an opening under `k_store`. Returns `nonce ‖ ciphertext`. */
 export function encryptOpening(o: Opening, kStore: Uint8Array): Uint8Array {
+  if (kStore.length !== 32) {
+    throw new RangeError("kStore must be a 32-byte XChaCha20 key");
+  }
   const pt = new Uint8Array([...toBytes32BE(o.v), ...toBytes32BE(o.r)]); // 64 bytes
   const nonce = randomBytes(24);
   const ct = xchacha20poly1305(kStore, nonce).encrypt(pt);
@@ -29,6 +32,9 @@ export function encryptOpening(o: Opening, kStore: Uint8Array): Uint8Array {
 
 /** Decrypt an opening blob under `k_store`. Throws on tamper or wrong key. */
 export function decryptOpening(blob: Uint8Array, kStore: Uint8Array): Opening {
+  if (kStore.length !== 32) {
+    throw new RangeError("kStore must be a 32-byte XChaCha20 key");
+  }
   const nonce = blob.slice(0, 24);
   const pt = xchacha20poly1305(kStore, nonce).decrypt(blob.slice(24)); // throws on tamper
   return { v: fromBytesBE(pt.slice(0, 32)), r: fromBytesBE(pt.slice(32, 64)) };
