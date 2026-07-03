@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TransactionType {
+  payment
+  config
+  trade
+  trustline
+  vault_deposit
+  vault_withdraw
+}
+
+enum TransactionStatus {
+  pending
+  ready
+  submitted
+  failed
+}
+
+enum ThresholdLevel {
+  low
+  medium
+  high
+}
+
+enum MemberRole {
+  owner
+  admin
+  member
+}
+
+model User {
+  publicKey   String   @id
+  displayName String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdAccounts MultisigAccount[] @relation("AccountCreatedBy")
+  memberships     AccountMember[]
+  proposedTxs     Transaction[]     @relation("TxProposedBy")
+
+  @@map("users")
+}
+
+model MultisigAccount {
+  id               String   @id @default(cuid())
+  name             String
+  stellarAccountId String   @unique
+  network          String   @default("mainnet")
+  createdBy        String
+  low              Int
+  medium           Int
+  high             Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  creator          User              @relation("AccountCreatedBy", fields: [createdBy], references: [publicKey])
+  members          AccountMember[]
+  transactions     Transaction[]
+  activityLogs     ActivityLog[]
+  balanceSnapshots BalanceSnapshot[]
+
+  @@index([createdBy])
+  @@map("multisig_accounts")
+}
+
+model AccountMember {
+  id        String     @id @default(cuid())
+  accountId String
+  publicKey String
+  weight    Int
+  role      MemberRole @default(member)
+  createdAt DateTime   @default(now())
+
+  account MultisigAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [publicKey], references: [publicKey])
+
+  @@unique([accountId, publicKey])
+  @@index([publicKey])
+  @@map("account_members")
+}
+
+model Transaction {
+  id                String            @id @default(cuid())
+  accountId         String
+  type              TransactionType
+  xdr               String
+  status            TransactionStatus @default(pending)
+  requiredThreshold Int
+  proposedBy        String
+  memo              String?
+  /// Stellar network this envelope targets. "mainnet" for every existing
+  /// transaction type; "testnet" only for vault_deposit against DeFindex's
+  /// testnet vaults (see @cluster/stellar's opt-in testnet passphrase/RPC).
+  network           String            @default("mainnet")
+  /// Off-chain config change (member add/remove, thresholds) applied to the
+  /// roster only after this transaction is submitted on-chain. See
+  /// `configChangeSchema` in @cluster/shared.
+  pendingChange     Json?
+  submittedHash     String?
+  /// Human-readable reason for the last on-chain failure (decoded Stellar
+  /// result codes). Cleared implicitly by never reusing failed envelopes.
+  lastError         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  account    MultisigAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  proposer   User            @relation("TxProposedBy", fields: [proposedBy], references: [publicKey])
+  signatures Signature[]
+
+  @@index([accountId])
+  @@index([status])
+  @@map("transactions")
+}
+
+model Signature {
+  id              String   @id @default(cuid())
+  transactionId   String
+  signerPublicKey String
+  signatureXdr    String
+  weight          Int
+  createdAt       DateTime @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@unique([transactionId, signerPublicKey])
+  @@map("signatures")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  accountId String
+  actor     String
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  account MultisigAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("activity_logs")
+}
+
+model BalanceSnapshot {
+  id          String   @id @default(cuid())
+  accountId   String
+  assetCode   String
+  assetIssuer String?
+  amount      Decimal  @db.Decimal(38, 7)
+  capturedAt  DateTime @default(now())
+
+  account MultisigAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, capturedAt])
+  @@map("balance_snapshots")
+}

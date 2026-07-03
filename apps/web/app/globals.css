@@ -1,17 +1,101 @@
 @import "tailwindcss";
 
+/* Tailwind v4 auto-detects content but ignores node_modules — where the
+   @cluster/ui workspace package is symlinked. Without this, none of the shared
+   component utilities (dialog positioning, overlays, button fills, etc.) are
+   generated and the UI renders unstyled. Scan the package source explicitly. */
+@source "../../../packages/ui/src";
+
+@import "@cluster/ui/theme.css";
+
+/* ── Cluster brand layer ───────────────────────────────────────────────────
+   Strict monochrome. Black surfaces, white ink, hairline borders. No accent
+   colour, no glow — hierarchy comes from weight, spacing and contrast alone.
+   The historical `--gold`/`--signal` tokens are kept (many components read
+   them) but resolve to white/neutral so everything stays black & white. */
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --ink: #fafafa;
+  --ink-soft: #e5e5e5;
+  --ink-dim: #a3a3a3;
+
+  /* Back-compat aliases → all monochrome now. */
+  --gold: var(--ink);
+  --gold-soft: var(--ink-soft);
+  --gold-deep: var(--ink-dim);
+  --signal: var(--ink);
+
+  /* Elevated surfaces. */
+  --surface: #101010;
+  --surface-2: #171717;
+  --hairline: #262626;
+
+  --font-sans: "Satoshi", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Satoshi", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+}
+
+/* ── Minimal motion ───────────────────────────────────────────────────────── */
+@keyframes cl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes cl-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cl-reveal {
+  opacity: 0;
+  animation: cl-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cl-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.cl-card:hover {
+  border-color: #333;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .cl-reveal {
+    opacity: 1;
+  }
 }

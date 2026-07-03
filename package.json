@@ -10,11 +10,24 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "start": "turbo run start",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "test": "turbo run test"
   },
   "devDependencies": {
-    "turbo": "^2.5.0"
+    "tsup": "^8.3.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.0",
+    "zod": "^3.23.8"
+  },
+  "optionalDependencies": {
+    "@esbuild/linux-x64": "0.27.7",
+    "@next/swc-linux-x64-gnu": "15.5.19",
+    "@rollup/rollup-linux-x64-gnu": "4.62.2",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.1",
+    "lightningcss-linux-x64-gnu": "1.32.0"
   },
   "packageManager": "npm@11.14.1",
   "engines": {
