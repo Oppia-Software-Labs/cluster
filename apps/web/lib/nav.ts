@@ -10,6 +10,7 @@ import {
   Settings,
   TrendingUp,
   Users,
+  Vault,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,4 +55,5 @@ export const navRegistry: NavEntry[] = [
   { label: "Trustlines", href: "/trustlines", icon: Link2 },
   { label: "NFTs", href: "/nfts", icon: Image },
   { label: "Cashflow", href: "/cashflow", icon: TrendingUp },
+  { label: "Invest", href: "/invest", icon: Vault },
 ];

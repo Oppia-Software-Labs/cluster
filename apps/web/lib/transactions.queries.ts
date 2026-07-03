@@ -7,8 +7,13 @@ import type {
   Transaction,
   TransactionWithSignatures,
 } from "@cluster/shared";
+import { NETWORK_PASSPHRASE, TESTNET_NETWORK_PASSPHRASE } from "@cluster/stellar";
 import { http } from "./http";
 import { signWithWallet } from "./transactions/sign";
+
+function passphraseFor(network: ProposeTransactionDto["network"]): string {
+  return network === "testnet" ? TESTNET_NETWORK_PASSPHRASE : NETWORK_PASSPHRASE;
+}
 
 export function useAccountTransactions(accountId: string) {
   return useQuery({
@@ -76,7 +81,11 @@ export function useProposeAndSign(accountId: string, signerPublicKey?: string) {
       );
       if (!signerPublicKey) return { tx, signed: false };
       try {
-        const signatureXdr = await signWithWallet(dto.xdr, signerPublicKey);
+        const signatureXdr = await signWithWallet(
+          dto.xdr,
+          signerPublicKey,
+          passphraseFor(dto.network),
+        );
         await http.post<Signature>(`/transactions/${tx.id}/signatures`, {
           signerPublicKey,
           signatureXdr,
