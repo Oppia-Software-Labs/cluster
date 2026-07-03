@@ -4,6 +4,9 @@ export * from "./account/index.js";
 export * from "./witness/index.js";
 export * from "./chain/index.js";
 export * from "./proving/index.js";
+// Off-chain selective-disclosure surface (browser-safe: no node:fs). The pinned
+// VK loader is node-only, exported from the ops block below.
+export * from "./disclosure/index.js";
 // Offline state engine (browser-safe barrel; excludes node-only json-store).
 export * from "./state/index.js";
 // Node-only prove ops (load vendored circuits via `node:fs`). The browser build
@@ -14,3 +17,5 @@ export {
   proveWithdraw,
   type TransferEnvelope,
 } from "./proving/ops.js";
+// Node-only pinned-VK loader for the disclosure circuits (reads circuits/vks).
+export { loadDisclosureVk, type DisclosureCircuitName } from "./proving/artifacts.js";
