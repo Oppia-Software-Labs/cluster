@@ -16,7 +16,7 @@ import type {
 } from '@cluster/shared';
 import { getStellarNetwork } from '@cluster/stellar';
 import { PrismaService } from '../prisma/prisma.service';
-import { accountWhere } from '../common/account-ref';
+import { accountWhere, assertActiveNetwork } from '../common/account-ref';
 
 // Prisma rows include the flat threshold columns + relations; the API surface
 // uses the nested `@cluster/shared` shapes. These helpers map between them so
@@ -111,10 +111,10 @@ export class AccountsService {
     }
   }
 
-  /** Accounts the caller is a member of. */
+  /** Accounts the caller is a member of, on the active network only. */
   async listForUser(publicKey: string): Promise<MultisigAccount[]> {
     const rows = await this.prisma.multisigAccount.findMany({
-      where: { members: { some: { publicKey } } },
+      where: { members: { some: { publicKey } }, network: getStellarNetwork() },
       include: { members: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -133,6 +133,7 @@ export class AccountsService {
     if (!row) {
       throw new NotFoundException('Account not found');
     }
+    assertActiveNetwork(row);
     this.assertMemberOf(row, requesterPublicKey);
     return this.toAccountWithMembers(row);
   }
@@ -149,6 +150,7 @@ export class AccountsService {
     if (!row) {
       throw new NotFoundException('Account not found');
     }
+    assertActiveNetwork(row);
     this.assertMemberOf(row, requesterPublicKey);
     return row.members.map((m) => this.toMember(m));
   }
@@ -302,6 +304,7 @@ export class AccountsService {
     if (!row) {
       throw new NotFoundException('Account not found');
     }
+    assertActiveNetwork(row);
     const me = row.members.find((m) => m.publicKey === requesterPublicKey);
     if (!me) {
       throw new ForbiddenException('Not a member of this account');

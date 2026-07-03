@@ -112,7 +112,7 @@ describe('AccountsService', () => {
       prismaMock.multisigAccount.findMany.mockResolvedValue([accountRow()]);
       const result = await service.listForUser(CREATOR);
       expect(prismaMock.multisigAccount.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { members: { some: { publicKey: CREATOR } } } }),
+        expect.objectContaining({ where: { members: { some: { publicKey: CREATOR } }, network: 'mainnet' } }),
       );
       expect(result[0].thresholds).toEqual({ low: 1, medium: 2, high: 3 });
     });

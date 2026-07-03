@@ -35,7 +35,7 @@ import {
   type SignerWeights,
 } from '@cluster/stellar';
 import { PrismaService } from '../prisma/prisma.service';
-import { accountWhere } from '../common/account-ref';
+import { accountWhere, assertActiveNetwork } from '../common/account-ref';
 
 @Injectable()
 export class TransactionsService {
@@ -67,6 +67,7 @@ export class TransactionsService {
     if (!account) {
       throw new NotFoundException(`Account ${accountId} not found`);
     }
+    assertActiveNetwork(account);
 
     if (dto.pendingChange) {
       this.assertChangeProposable(account, proposedBy, dto);
@@ -163,10 +164,12 @@ export class TransactionsService {
   ): Promise<Signature> {
     const tx = await this.prisma.transaction.findUnique({
       where: { id: transactionId },
+      include: { account: true },
     });
     if (!tx) {
       throw new NotFoundException(`Transaction ${transactionId} not found`);
     }
+    assertActiveNetwork(tx.account);
     if (tx.status === 'submitted') {
       throw new BadRequestException('Transaction already submitted');
     }
@@ -222,11 +225,12 @@ export class TransactionsService {
   async submit(transactionId: string): Promise<SubmitTransactionResponse> {
     const tx = await this.prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { signatures: true },
+      include: { signatures: true, account: true },
     });
     if (!tx) {
       throw new NotFoundException(`Transaction ${transactionId} not found`);
     }
+    assertActiveNetwork(tx.account);
     if (tx.status === 'submitted') {
       throw new ConflictException('Transaction already submitted');
     }
@@ -451,6 +455,7 @@ export class TransactionsService {
     if (!account) {
       throw new NotFoundException(`Account ${accountId} not found`);
     }
+    assertActiveNetwork(account);
 
     const txs = await this.prisma.transaction.findMany({
       where: { accountId: account.id },
@@ -463,11 +468,12 @@ export class TransactionsService {
   async getWithSignatures(transactionId: string): Promise<TransactionWithSignatures> {
     const tx = await this.prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { signatures: true },
+      include: { signatures: true, account: true },
     });
     if (!tx) {
       throw new NotFoundException(`Transaction ${transactionId} not found`);
     }
+    assertActiveNetwork(tx.account);
 
     return {
       ...this.toTransaction(tx),
