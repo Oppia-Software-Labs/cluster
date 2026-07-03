@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import type {
   BuildVaultDepositXdrDto,
   BuildVaultWithdrawXdrDto,
+  GetVaultBalanceQueryDto,
+  VaultBalanceResponse,
 } from '@cluster/shared';
 import { getStellarNetwork } from '@cluster/stellar';
 import type { Env } from '../config/env.schema';
@@ -99,6 +101,37 @@ export class DefindexService {
       throw new BadRequestException('DeFindex did not return a transaction XDR.');
     }
     return { xdr: data.xdr };
+  }
+
+  /**
+   * Read-only: the caller's current shares/underlying balance in a vault.
+   * No signing involved — just a DeFindex GET proxied through the server so
+   * the API key never reaches the browser.
+   */
+  async getBalance(
+    vaultAddress: string,
+    query: GetVaultBalanceQueryDto,
+  ): Promise<VaultBalanceResponse> {
+    const network = query.network ?? getStellarNetwork();
+    const params = new URLSearchParams({ from: query.from, network });
+
+    const res = await fetch(
+      `${DEFINDEX_API_URL}/vault/${vaultAddress}/balance?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.config.get('DEFINDEX_API_KEY', { infer: true })}`,
+        },
+      },
+    );
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new BadRequestException(
+        `DeFindex balance request failed (${res.status}): ${detail || res.statusText}`,
+      );
+    }
+
+    return (await res.json()) as VaultBalanceResponse;
   }
 }
 
