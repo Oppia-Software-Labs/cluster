@@ -9,3 +9,4 @@ export * from "./dtos/transaction";
 export * from "./dtos/signature";
 export * from "./dtos/transaction-detail";
 export * from "./dtos/assets";
+export * from "./dtos/defindex";

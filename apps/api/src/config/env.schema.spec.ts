@@ -11,6 +11,8 @@ const valid = {
   NETWORK_PASSPHRASE: 'Public Global Stellar Network ; September 2015',
   STELLAR_RPC_URL: 'https://mainnet.sorobanrpc.com',
   STELLAR_HORIZON_URL: 'https://horizon.stellar.org',
+  STELLAR_TESTNET_RPC_URL: 'https://soroban-testnet.stellar.org',
+  DEFINDEX_API_KEY: 'sk_test_key',
 };
 
 describe('validateEnv', () => {

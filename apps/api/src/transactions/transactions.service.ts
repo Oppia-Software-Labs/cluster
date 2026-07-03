@@ -26,6 +26,8 @@ import {
 import {
   combineSignatures,
   getNetworkPassphrase,
+  getRpcServer,
+  getRpcUrl,
   isThresholdMet,
   submitSignedXdr,
   type CollectedSignature,
@@ -83,6 +85,7 @@ export class TransactionsService {
         requiredThreshold,
         proposedBy,
         memo: dto.memo,
+        network: dto.network ?? 'mainnet',
         pendingChange: dto.pendingChange,
       },
     });
@@ -287,16 +290,20 @@ export class TransactionsService {
     tx: PrismaTransaction & { signatures: PrismaSignature[] },
     collected: CollectedSignature[],
   ): Promise<SubmitTransactionResponse> {
-    const signedXdr = combineSignatures(
-      tx.xdr,
-      collected,
-      getNetworkPassphrase(),
-    );
+    const network = toNetwork(tx.network);
+    const passphrase = getNetworkPassphrase(network);
+    const signedXdr = combineSignatures(tx.xdr, collected, passphrase);
+
+    // Only override the RPC server for the testnet opt-in path — mainnet
+    // keeps relying on submitSignedXdr's own default (getRpcServer()) so
+    // existing mocks/tests that inject a fake `server` are unaffected.
+    const server = network === 'testnet' ? getRpcServer(getRpcUrl('testnet')) : undefined;
 
     let result: Awaited<ReturnType<typeof submitSignedXdr>>;
     try {
       result = await submitSignedXdr(signedXdr, {
-        networkPassphrase: getNetworkPassphrase(),
+        ...(server ? { server } : {}),
+        networkPassphrase: passphrase,
       });
     } catch (err) {
       const reason = describeStellarError(
@@ -494,6 +501,7 @@ export class TransactionsService {
       requiredThreshold: tx.requiredThreshold,
       proposedBy: tx.proposedBy,
       memo: tx.memo,
+      network: toNetwork(tx.network),
       submittedHash: tx.submittedHash,
       lastError: tx.lastError,
     };
@@ -508,6 +516,15 @@ export class TransactionsService {
       weight: sig.weight,
     };
   }
+}
+
+/**
+ * Narrow the plain-string `network` column (Prisma has no enum for it) to
+ * the literal union the pipeline expects. Any unrecognized value defaults to
+ * mainnet — the safe choice given "mainnet = real funds".
+ */
+function toNetwork(value: string): 'mainnet' | 'testnet' {
+  return value === 'testnet' ? 'testnet' : 'mainnet';
 }
 
 /** Stellar tx/op result codes mapped to messages a signer can act on. */

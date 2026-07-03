@@ -13,6 +13,8 @@ enum TransactionType {
   config
   trade
   trustline
+  vault_deposit
+  vault_withdraw
 }
 
 enum TransactionStatus {
@@ -95,6 +97,10 @@ model Transaction {
   requiredThreshold Int
   proposedBy        String
   memo              String?
+  /// Stellar network this envelope targets. "mainnet" for every existing
+  /// transaction type; "testnet" only for vault_deposit against DeFindex's
+  /// testnet vaults (see @cluster/stellar's opt-in testnet passphrase/RPC).
+  network           String            @default("mainnet")
   /// Off-chain config change (member add/remove, thresholds) applied to the
   /// roster only after this transaction is submitted on-chain. See
   /// `configChangeSchema` in @cluster/shared.

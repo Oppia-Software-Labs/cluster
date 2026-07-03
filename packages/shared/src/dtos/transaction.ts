@@ -3,6 +3,7 @@ import {
   transactionTypeSchema,
   transactionStatusSchema,
   thresholdLevelSchema,
+  networkSchema,
 } from "../enums";
 
 /**
@@ -32,6 +33,7 @@ export const transactionSchema = z.object({
   requiredThreshold: z.number().int().nonnegative(),
   proposedBy: z.string().min(1),
   memo: z.string().nullable(),
+  network: networkSchema,
   submittedHash: z.string().nullable(),
   /** Decoded reason for the last on-chain failure; null unless status=failed. */
   lastError: z.string().nullable(),

@@ -1,6 +1,7 @@
 export {
   STELLAR_NETWORK,
   NETWORK_PASSPHRASE,
+  TESTNET_NETWORK_PASSPHRASE,
   getNetworkPassphrase,
 } from "./network.js";
 

@@ -11,6 +11,10 @@ export const envSchema = z.object({
   NETWORK_PASSPHRASE: z.string().min(1),
   STELLAR_RPC_URL: z.string().url(),
   STELLAR_HORIZON_URL: z.string().url(),
+  /** Opt-in testnet path used only by vault_deposit transactions. */
+  STELLAR_TESTNET_RPC_URL: z.string().url(),
+  /** Server-held DeFindex API key — never sent to the browser. */
+  DEFINDEX_API_KEY: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -6,8 +6,18 @@ export const transactionTypeSchema = z.enum([
   "config",
   "trade",
   "trustline",
+  "vault_deposit",
+  "vault_withdraw",
 ]);
 export type TransactionType = z.infer<typeof transactionTypeSchema>;
+
+/**
+ * Stellar network a transaction targets. Cluster operates on mainnet by
+ * default (real funds); "testnet" is an explicit opt-in used today only by
+ * `vault_deposit` transactions against DeFindex's testnet vaults.
+ */
+export const networkSchema = z.enum(["mainnet", "testnet"]);
+export type Network = z.infer<typeof networkSchema>;
 
 /** Lifecycle status of a pending multisig transaction. */
 export const transactionStatusSchema = z.enum([
