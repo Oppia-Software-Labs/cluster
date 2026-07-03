@@ -104,6 +104,7 @@ describe("Transaction", () => {
       requiredThreshold: 2,
       proposedBy: "GABC",
       memo: null,
+      network: "mainnet",
       submittedHash: null,
       lastError: null,
     };
