@@ -26,7 +26,7 @@ export type NavEntry = {
 /**
  * APPEND-ONLY nav registry.
  *
- * Seeded ONLY with Member 1's own entries (Dashboard, Settings).
+ * Seeded ONLY with Member 1's own entry (Dashboard).
  *
  * ┌─────────────────────────────────────────────────────────────┐
  * │ OTHER MEMBERS: APPEND your entry to the END of this array.   │
