@@ -21,6 +21,7 @@ import {
 } from "@/lib/transactions.queries";
 import { signWithWallet } from "@/lib/transactions/sign";
 import { apiError } from "@/lib/api-error";
+import { SignerDecryptView } from "@/components/confidential/signer-decrypt-view";
 
 const truncate = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
 
@@ -106,6 +107,14 @@ export function TransactionCard({
     <li className="cl-card flex flex-col gap-3 p-4">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium capitalize">{tx.type}</span>
+        {tx.type === "confidential" && tx.confidentialOp && (
+          <Badge
+            variant="outline"
+            className="border-[var(--gold)]/40 text-[10px] capitalize text-[var(--gold)]"
+          >
+            {tx.confidentialOp}
+          </Badge>
+        )}
         <Badge className={cn("text-[10px] capitalize", STATUS_STYLE[tx.status])}>
           {tx.status}
         </Badge>
@@ -171,6 +180,8 @@ export function TransactionCard({
       )}
 
       {error && <p className="text-destructive text-sm">{error}</p>}
+
+      {tx.type === "confidential" && <SignerDecryptView tx={tx} />}
 
       {(tx.status === "pending" || tx.status === "ready") && (
         <div className="flex gap-2">

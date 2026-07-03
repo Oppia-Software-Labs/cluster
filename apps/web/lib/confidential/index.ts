@@ -25,6 +25,10 @@ export {
   type ConfidentialPayloadV1,
 } from "./propose";
 export {
+  decryptProposedTransfer,
+  type DecryptedTransferDetail,
+} from "./decrypt-transfer";
+export {
   useConfidentialRegistration,
   useCreateRegistration,
   useAdvanceRegistration,
