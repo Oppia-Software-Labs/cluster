@@ -5,3 +5,5 @@ export * from "./poseidon2.js";
 export * from "./address.js";
 export * from "./keys.js";
 export * from "./derive.js";
+export * from "./seal.js";
+export * from "./openings.js";
