@@ -47,4 +47,21 @@ describe('validateEnv', () => {
     const { STELLAR_TESTNET_RPC_URL: _omit, ...withoutOverride } = valid;
     expect(validateEnv(withoutOverride).STELLAR_TESTNET_RPC_URL).toBeUndefined();
   });
+
+  it('leaves the confidential contract IDs undefined when omitted', () => {
+    const parsed = validateEnv(valid);
+    expect(parsed.CONFIDENTIAL_TOKEN_CONTRACT_ID).toBeUndefined();
+    expect(parsed.CONFIDENTIAL_VERIFIER_CONTRACT_ID).toBeUndefined();
+    expect(parsed.CONFIDENTIAL_AUDITOR_CONTRACT_ID).toBeUndefined();
+    expect(parsed.CONFIDENTIAL_UNDERLYING_SAC).toBeUndefined();
+  });
+
+  it('accepts a valid 56-char confidential contract ID when present', () => {
+    const contractId = 'C'.repeat(56);
+    const parsed = validateEnv({
+      ...valid,
+      CONFIDENTIAL_TOKEN_CONTRACT_ID: contractId,
+    });
+    expect(parsed.CONFIDENTIAL_TOKEN_CONTRACT_ID).toBe(contractId);
+  });
 });

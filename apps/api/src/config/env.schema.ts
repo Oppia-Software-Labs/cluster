@@ -26,11 +26,11 @@ export const envSchema = z.object({
    * Confidential-token contract IDs (Stellar testnet). These are the deployed
    * confidential-token, ZK verifier, and auditor contracts respectively.
    */
-  CONFIDENTIAL_TOKEN_CONTRACT_ID: z.string().length(56),
-  CONFIDENTIAL_VERIFIER_CONTRACT_ID: z.string().length(56),
-  CONFIDENTIAL_AUDITOR_CONTRACT_ID: z.string().length(56),
+  CONFIDENTIAL_TOKEN_CONTRACT_ID: z.string().length(56).optional(),
+  CONFIDENTIAL_VERIFIER_CONTRACT_ID: z.string().length(56).optional(),
+  CONFIDENTIAL_AUDITOR_CONTRACT_ID: z.string().length(56).optional(),
   /** Stellar Asset Contract (SAC) for the underlying token being wrapped. */
-  CONFIDENTIAL_UNDERLYING_SAC: z.string().length(56),
+  CONFIDENTIAL_UNDERLYING_SAC: z.string().length(56).optional(),
   /** Index of the auditor key in the on-chain auditor registry. */
   CONFIDENTIAL_AUDITOR_ID: z.coerce.number().int().nonnegative().default(0),
 });
