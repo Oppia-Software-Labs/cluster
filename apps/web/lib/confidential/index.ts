@@ -24,3 +24,25 @@ export {
   proposeWithdrawTx,
   type ConfidentialPayloadV1,
 } from "./propose";
+export {
+  useConfidentialRegistration,
+  useCreateRegistration,
+  useAdvanceRegistration,
+  useWrapKey,
+  usePublishWrapKey,
+  useKeyEnvelopes,
+  usePutKeyEnvelope,
+} from "./queries";
+export {
+  useConfidentialSession,
+  getMyWrapKeypair,
+  getSessionKStore,
+  type ConfidentialSessionStatus,
+  type ConfidentialSession,
+} from "./session";
+export {
+  ApiStateStore,
+  syncConfidentialState,
+  useConfidentialSync,
+  type ConfidentialSyncResult,
+} from "./sync";
