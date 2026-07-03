@@ -161,6 +161,23 @@ export function getSessionKStore(accountId: string): Uint8Array | null {
 }
 
 /**
+ * Seed the module session with a freshly generated account secret.
+ * Used by the activation wizard, which generates the account secret in-browser —
+ * priming the session right after generation avoids a redundant wallet unlock
+ * before proposing registration.
+ */
+export function primeConfidentialSession(accountId: string, sk: bigint): void {
+  if (!CONFIDENTIAL_TOKEN_ID) {
+    throw new Error(
+      "NEXT_PUBLIC_CONFIDENTIAL_TOKEN_CONTRACT_ID is not configured; cannot unlock confidential keys.",
+    );
+  }
+
+  const { kStore } = deriveAccountKeys(sk, CONFIDENTIAL_TOKEN_ID);
+  setSession(accountId, { sk, kStore });
+}
+
+/**
  * Shared unlocked-key session for confidential operations (M4 replacement for
  * per-component {@link useConfidentialKey} state).
  *

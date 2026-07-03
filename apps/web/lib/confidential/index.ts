@@ -37,6 +37,7 @@ export {
   useConfidentialSession,
   getMyWrapKeypair,
   getSessionKStore,
+  primeConfidentialSession,
   type ConfidentialSessionStatus,
   type ConfidentialSession,
 } from "./session";
