@@ -17,6 +17,8 @@ import {
   configChangeSchema,
   type AddSignatureDto,
   type ConfigChange,
+  type PendingSignatureAccount,
+  type PendingSignaturesResponse,
   type ProposeTransactionDto,
   type Signature,
   type SubmitTransactionResponse,
@@ -463,6 +465,44 @@ export class TransactionsService {
     });
 
     return txs.map((tx) => this.toTransaction(tx));
+  }
+
+  /**
+   * Pending transactions, across every account the user is a member of on
+   * the active network, that are still missing their signature — i.e. what
+   * the notifications bell needs to badge. A transaction already at
+   * `ready`/`submitted`/`failed` never needs another signature from anyone,
+   * so only `pending` counts.
+   */
+  async pendingForUser(publicKey: string): Promise<PendingSignaturesResponse> {
+    const txs = await this.prisma.transaction.findMany({
+      where: {
+        status: 'pending',
+        account: {
+          network: getStellarNetwork(),
+          members: { some: { publicKey } },
+        },
+        signatures: { none: { signerPublicKey: publicKey } },
+      },
+      select: {
+        accountId: true,
+        account: { select: { name: true, stellarAccountId: true } },
+      },
+    });
+
+    const byAccount = new Map<string, PendingSignatureAccount>();
+    for (const tx of txs) {
+      const entry = byAccount.get(tx.accountId) ?? {
+        accountId: tx.accountId,
+        stellarAccountId: tx.account.stellarAccountId,
+        accountName: tx.account.name,
+        count: 0,
+      };
+      entry.count += 1;
+      byAccount.set(tx.accountId, entry);
+    }
+
+    return { count: txs.length, accounts: [...byAccount.values()] };
   }
 
   async getWithSignatures(transactionId: string): Promise<TransactionWithSignatures> {

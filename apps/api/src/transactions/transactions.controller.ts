@@ -56,6 +56,13 @@ export class TransactionsController {
     return this.transactions.submit(transactionId);
   }
 
+  // Must come before `transactions/:id` — otherwise Express would greedily
+  // match "pending-for-me" as an :id.
+  @Get('transactions/pending-for-me')
+  pendingForMe(@Req() req: AuthedRequest) {
+    return this.transactions.pendingForUser(req.user.publicKey);
+  }
+
   @Get('transactions/:id')
   getWithSignatures(@Param('id') transactionId: string) {
     return this.transactions.getWithSignatures(transactionId);
