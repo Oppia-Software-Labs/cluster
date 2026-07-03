@@ -37,6 +37,19 @@ enum MemberRole {
   member
 }
 
+enum ConfidentialRegStatus {
+  pending
+  registered
+}
+
+enum ConfidentialOp {
+  register
+  deposit
+  merge
+  transfer
+  withdraw
+}
+
 model User {
   publicKey   String   @id
   displayName String?
@@ -44,9 +57,10 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  createdAccounts MultisigAccount[] @relation("AccountCreatedBy")
-  memberships     AccountMember[]
-  proposedTxs     Transaction[]     @relation("TxProposedBy")
+  createdAccounts     MultisigAccount[]    @relation("AccountCreatedBy")
+  memberships         AccountMember[]
+  proposedTxs         Transaction[]        @relation("TxProposedBy")
+  confidentialWrapKey ConfidentialWrapKey?
 
   @@map("users")
 }
@@ -63,11 +77,14 @@ model MultisigAccount {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  creator          User              @relation("AccountCreatedBy", fields: [createdBy], references: [publicKey])
-  members          AccountMember[]
-  transactions     Transaction[]
-  activityLogs     ActivityLog[]
-  balanceSnapshots BalanceSnapshot[]
+  creator                  User                      @relation("AccountCreatedBy", fields: [createdBy], references: [publicKey])
+  members                  AccountMember[]
+  transactions             Transaction[]
+  activityLogs             ActivityLog[]
+  balanceSnapshots         BalanceSnapshot[]
+  confidentialRegistration ConfidentialRegistration?
+  confidentialEnvelopes    ConfidentialKeyEnvelope[]
+  confidentialOpenings     ConfidentialOpening[]
 
   @@index([createdBy])
   @@map("multisig_accounts")
@@ -110,6 +127,10 @@ model Transaction {
   /// Human-readable reason for the last on-chain failure (decoded Stellar
   /// result codes). Cleared implicitly by never reusing failed envelopes.
   lastError         String?
+  /// Which confidential operation this pipeline row represents, so the UI can
+  /// label it (register/deposit/merge/transfer/withdraw) WITHOUT decrypting
+  /// anything. Null for every non-confidential transaction. See §5.2.
+  confidentialOp    ConfidentialOp?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -162,4 +183,52 @@ model BalanceSnapshot {
 
   @@index([accountId, capturedAt])
   @@map("balance_snapshots")
+}
+
+model ConfidentialRegistration {
+  id             String                @id @default(cuid())
+  accountId      String                @unique
+  tokenContract  String
+  auditorId      Int
+  status         ConfidentialRegStatus @default(pending)
+  spendingPubKey String
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  account MultisigAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+model ConfidentialWrapKey {
+  id            String   @id @default(cuid())
+  userPublicKey String   @unique
+  wrapPublicKey String
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userPublicKey], references: [publicKey], onDelete: Cascade)
+}
+
+model ConfidentialKeyEnvelope {
+  id              String   @id @default(cuid())
+  accountId       String
+  memberPublicKey String
+  ciphertext      String
+  createdAt       DateTime @default(now())
+
+  account MultisigAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, memberPublicKey])
+  @@index([accountId])
+}
+
+model ConfidentialOpening {
+  id         String   @id @default(cuid())
+  accountId  String
+  eventKey   String
+  ciphertext String
+  createdAt  DateTime @default(now())
+
+  account MultisigAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, eventKey])
+  @@index([accountId])
 }

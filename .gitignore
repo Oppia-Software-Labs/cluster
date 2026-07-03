@@ -25,3 +25,6 @@ npm-debug.log*
 .DS_Store
 *.pem
 coverage
+
+# Vendored bb.js browser build (copied from node_modules by scripts/vendor-bb.mjs)
+apps/web/public/vendor/

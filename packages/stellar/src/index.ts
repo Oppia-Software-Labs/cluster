@@ -39,3 +39,25 @@ export {
 } from "./builders/config.js";
 
 export { PaymentBuilder, type PaymentInput } from "./builders/payment.js";
+
+export {
+  buildInvocation,
+  SorobanSimulationError,
+  SorobanRestoreRequiredError,
+  SOROBAN_TX_TIMEOUT_SECS,
+  RESOURCE_FEE_MARGIN_PCT,
+  type SorobanContext,
+  type BuildInvocationInput,
+  type BuiltInvocation,
+} from "./soroban.js";
+
+export {
+  buildRegisterTx,
+  buildDepositTx,
+  buildMergeTx,
+  buildTransferTx,
+  buildWithdrawTx,
+  type ConfidentialOp,
+  type ConfidentialBuilt,
+  type ConfidentialTxBase,
+} from "./builders/confidential.js";

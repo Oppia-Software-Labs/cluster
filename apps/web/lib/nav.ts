@@ -4,6 +4,7 @@ import {
   Coins,
   LayoutDashboard,
   Link2,
+  ShieldCheck,
   Users,
   Vault,
   type LucideIcon,
@@ -46,4 +47,6 @@ export const navRegistry: NavEntry[] = [
   { label: "Coins", href: "/coins", icon: Coins },
   { label: "Trustlines", href: "/trustlines", icon: Link2 },
   { label: "Invest", href: "/invest", icon: Vault },
+  // ZK confidential — holder selective-disclosure flow.
+  { label: "Disclose", href: "/disclose", icon: ShieldCheck },
 ];

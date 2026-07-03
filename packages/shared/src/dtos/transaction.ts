@@ -4,6 +4,7 @@ import {
   transactionStatusSchema,
   thresholdLevelSchema,
   networkSchema,
+  confidentialOpSchema,
 } from "../enums";
 
 /**
@@ -37,5 +38,10 @@ export const transactionSchema = z.object({
   submittedHash: z.string().nullable(),
   /** Decoded reason for the last on-chain failure; null unless status=failed. */
   lastError: z.string().nullable(),
+  /**
+   * The confidential-token operation this transaction performs, when
+   * type=confidential; null/absent otherwise. Lets the UI label the op.
+   */
+  confidentialOp: confidentialOpSchema.nullish(),
 });
 export type Transaction = z.infer<typeof transactionSchema>;

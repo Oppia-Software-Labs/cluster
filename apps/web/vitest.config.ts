@@ -14,5 +14,11 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    // NEXT_PUBLIC_* vars are read at module-load time by the confidential hooks;
+    // seed them here so they exist before any test module imports run.
+    env: {
+      NEXT_PUBLIC_CONFIDENTIAL_TOKEN_CONTRACT_ID: "CTOKEN123",
+      NEXT_PUBLIC_STELLAR_RPC_URL: "https://rpc.example",
+    },
   },
 });

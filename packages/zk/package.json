@@ -16,6 +16,11 @@
       "types": "./dist/node.d.ts",
       "import": "./dist/node.js",
       "require": "./dist/node.cjs"
+    },
+    "./chain": {
+      "types": "./dist/chain.d.ts",
+      "import": "./dist/chain.js",
+      "require": "./dist/chain.cjs"
     }
   },
   "files": ["dist", "circuits"],
