@@ -9,7 +9,13 @@ export type { ProofEnvelope, Opening } from "./types.js";
 export * from "./crypto/index.js";
 export * from "./account/index.js";
 export * from "./witness/index.js";
-export * from "./chain/index.js";
+// Only the XDR payload encoders are safe to re-export at the top level. The
+// chain reader / events / auditor decrypt live on the `@cluster/zk/chain`
+// subpath ({@link ./chain.ts}) because the chain-layer `ConfidentialEvent`
+// union collides by name with the state-engine's (`state/types.ts`), which is
+// re-exported below from `./state/index.js`. Keeping the chain reader off the
+// top-level barrel leaves the existing StateEngine surface UNCHANGED.
+export * from "./chain/payload.js";
 // `proving/index.ts` re-exports ONLY `prover.js` (CircuitProver, KECCAK,
 // setUltraHonkBackendLoader) — never artifacts.ts/ops.ts (node:fs).
 export * from "./proving/index.js";
