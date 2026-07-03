@@ -1,21 +1,22 @@
+/**
+ * Browser-safe public barrel for `@cluster/zk`. This entry MUST NOT import any
+ * `node:*` module (directly or transitively) — it is the surface a browser
+ * bundle (Z5) consumes. Every node:fs-touching module (circuit/VK loaders, the
+ * prove ops that read vendored circuits, the JSON file store) lives on the
+ * `@cluster/zk/node` subpath ({@link ./node.ts}) instead.
+ */
 export type { ProofEnvelope, Opening } from "./types.js";
 export * from "./crypto/index.js";
 export * from "./account/index.js";
 export * from "./witness/index.js";
 export * from "./chain/index.js";
+// `proving/index.ts` re-exports ONLY `prover.js` (CircuitProver, KECCAK,
+// setUltraHonkBackendLoader) — never artifacts.ts/ops.ts (node:fs).
 export * from "./proving/index.js";
-// Off-chain selective-disclosure surface (browser-safe: no node:fs). The pinned
-// VK loader is node-only, exported from the ops block below.
+// Off-chain selective-disclosure surface. Browser-safe: prove.ts/verify.ts take
+// an injected `CircuitProver`, so nothing here pulls the node-only circuit
+// loader. The pinned-VK loader (`loadDisclosureVk`) is node-only → `./node`.
 export * from "./disclosure/index.js";
-// Offline state engine (browser-safe barrel; excludes node-only json-store).
+// Offline state engine (browser-safe barrel; excludes node-only json-store,
+// which is re-exported from `./node`).
 export * from "./state/index.js";
-// Node-only prove ops (load vendored circuits via `node:fs`). The browser build
-// (Z5) supplies its own artifact path and must not pull these through a bundle.
-export {
-  proveRegister,
-  proveTransfer,
-  proveWithdraw,
-  type TransferEnvelope,
-} from "./proving/ops.js";
-// Node-only pinned-VK loader for the disclosure circuits (reads circuits/vks).
-export { loadDisclosureVk, type DisclosureCircuitName } from "./proving/artifacts.js";

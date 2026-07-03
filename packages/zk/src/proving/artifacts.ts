@@ -4,7 +4,7 @@
  * build (Z5) supplies circuits through its own vendored-artifact path.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import type { CompiledCircuit } from "@noir-lang/noir_js";
@@ -17,7 +17,27 @@ export type CircuitName =
   | "disclose_recipient"
   | "disclose_sender";
 
-const circuitsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "circuits");
+/**
+ * Locate the vendored `circuits/` dir relative to THIS module. The relative
+ * depth differs between the source layout (`src/proving/artifacts.ts`, two
+ * levels down from the package root, used by vitest) and the bundled output
+ * (`dist/node.{js,cjs}`, one level down, used by consumers). Walk up from this
+ * file until a sibling `circuits/` dir is found rather than hard-coding a depth.
+ */
+function resolveCircuitsDir(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 6; i++) {
+    const candidate = join(dir, "circuits");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  // Fall back to the source-layout depth for a clear error if nothing matched.
+  return join(dirname(fileURLToPath(import.meta.url)), "..", "..", "circuits");
+}
+
+const circuitsDir = resolveCircuitsDir();
 
 export function loadCircuit(name: CircuitName): CompiledCircuit {
   return JSON.parse(readFileSync(join(circuitsDir, `${name}.json`), "utf8")) as CompiledCircuit;
