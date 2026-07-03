@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AssetsModule } from './assets/assets.module';
+import { DefindexModule } from './defindex/defindex.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AssetsModule } from './assets/assets.module';
     AccountsModule,
     TransactionsModule,
     AssetsModule,
+    DefindexModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -16,13 +16,15 @@ describe("TransactionType", () => {
     expect(transactionTypeSchema.parse("config")).toBe("config");
     expect(transactionTypeSchema.parse("trade")).toBe("trade");
     expect(transactionTypeSchema.parse("trustline")).toBe("trustline");
+    expect(transactionTypeSchema.parse("vault_deposit")).toBe("vault_deposit");
+    expect(transactionTypeSchema.parse("vault_withdraw")).toBe("vault_withdraw");
   });
   it("rejects unknown values", () => {
     expect(() => transactionTypeSchema.parse("swap")).toThrow();
   });
   it("infers to the exported type", () => {
     expectTypeOf<TransactionType>().toEqualTypeOf<
-      "payment" | "config" | "trade" | "trustline"
+      "payment" | "config" | "trade" | "trustline" | "vault_deposit" | "vault_withdraw"
     >();
   });
 });

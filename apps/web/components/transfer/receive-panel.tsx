@@ -1,19 +1,17 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState } from "react";
 import { Check, Copy, ExternalLink, Info } from "lucide-react";
 
 import { Button } from "@cluster/ui";
 
 import { useAccount } from "@/lib/queries";
+import { explorerUrl, NETWORK_LABEL } from "@/lib/stellar-network";
 import { AddressQr } from "@/components/deposit/address-qr";
 
-export default function DepositPage({
-  params,
-}: {
-  params: Promise<{ accountId: string }>;
-}) {
-  const { accountId } = use(params);
+/** Receive-funds panel. Formerly the standalone /deposit page — now the
+ * "Receive" tab of /transfer. */
+export function ReceivePanel({ accountId }: { accountId: string }) {
   const { data: account, isLoading } = useAccount(accountId);
   const [copied, setCopied] = useState(false);
 
@@ -28,18 +26,6 @@ export default function DepositPage({
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-6">
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--gold)]">
-          fund
-        </p>
-        <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">
-          Deposit
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Send Stellar assets to this account’s address to fund the treasury.
-        </p>
-      </div>
-
       <div className="cl-card flex flex-col items-center gap-6 p-6">
         {isLoading ? (
           <div className="size-[200px] animate-pulse rounded-2xl bg-[var(--surface-2)]" />
@@ -78,12 +64,12 @@ export default function DepositPage({
               Stellar
             </span>
             <span className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              Mainnet
+              {NETWORK_LABEL}
             </span>
           </div>
           {address && (
             <a
-              href={`https://stellar.expert/explorer/public/account/${address}`}
+              href={explorerUrl(`account/${address}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[var(--gold)] hover:underline"
@@ -97,7 +83,7 @@ export default function DepositPage({
       <div className="flex items-start gap-2.5 rounded-xl border border-[var(--hairline)] bg-[var(--surface)]/60 p-4">
         <Info className="mt-0.5 size-4 shrink-0 text-[var(--gold)]" />
         <p className="text-muted-foreground text-xs leading-relaxed">
-          Only send assets on the <span className="text-foreground">Stellar public network</span>.
+          Only send assets on the <span className="text-foreground">Stellar {NETWORK_LABEL.toLowerCase()}</span> network.
           For non-native assets, this account must already hold the matching
           trustline or the payment will fail. Deposits are non-reversible.
         </p>

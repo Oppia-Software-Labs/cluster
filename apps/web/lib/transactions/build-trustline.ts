@@ -4,7 +4,8 @@ import {
   Operation,
   TransactionBuilder,
 } from "@stellar/stellar-sdk";
-import { getRpcServer, NETWORK_PASSPHRASE } from "@cluster/stellar";
+import { getRpcServer } from "@cluster/stellar";
+import { NETWORK_PASSPHRASE } from "@/lib/stellar-network";
 import type { BuiltTransaction } from "@cluster/shared";
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL;

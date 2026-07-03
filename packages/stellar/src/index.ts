@@ -1,7 +1,9 @@
 export {
-  STELLAR_NETWORK,
-  NETWORK_PASSPHRASE,
+  MAINNET_NETWORK_PASSPHRASE,
+  TESTNET_NETWORK_PASSPHRASE,
+  getStellarNetwork,
   getNetworkPassphrase,
+  type StellarNetwork,
 } from "./network.js";
 
 export { getRpcUrl, getRpcServer } from "./rpc.js";

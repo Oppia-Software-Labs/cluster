@@ -20,7 +20,7 @@ import {
   TransactionBuilder,
   BASE_FEE,
 } from '@stellar/stellar-sdk';
-import { NETWORK_PASSPHRASE, submitSignedXdr } from '@cluster/stellar';
+import { MAINNET_NETWORK_PASSPHRASE as NETWORK_PASSPHRASE, submitSignedXdr } from '@cluster/stellar';
 import { TransactionsService } from './transactions.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -109,6 +109,7 @@ describe('TransactionsService.addSignature', () => {
 
   it('rejects signers who are not account members', async () => {
     prismaMock.transaction.findUnique.mockResolvedValue({
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'pending',
@@ -128,6 +129,7 @@ describe('TransactionsService.addSignature', () => {
     const xdr = buildUnsignedXdr();
     const sigXdr = signatureFor(xdr, signerA);
     const baseTx = {
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'pending',
@@ -204,6 +206,7 @@ describe('TransactionsService.addSignature', () => {
     const xdr = buildUnsignedXdr();
     const sigXdr = signatureFor(xdr, signerA);
     const baseTx = {
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'pending',
@@ -266,6 +269,7 @@ describe('TransactionsService.propose (pendingChange guards)', () => {
 
   const account = {
     id: 'acc1',
+    network: 'mainnet',
     low: 1,
     medium: 2,
     high: 3,
@@ -404,6 +408,7 @@ describe('TransactionsService.submit', () => {
   it('refuses submit when threshold is not met', async () => {
     const xdr = buildUnsignedXdr();
     prismaMock.transaction.findUnique.mockResolvedValue({
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'pending',
@@ -450,6 +455,7 @@ describe('TransactionsService.submit', () => {
     const xdr = buildUnsignedXdr();
     const sigXdr = signatureFor(xdr, signerA);
     prismaMock.transaction.findUnique.mockResolvedValue({
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'ready',
@@ -477,6 +483,7 @@ describe('TransactionsService.submit', () => {
 
   it('refuses to resubmit a failed (spent) envelope', async () => {
     prismaMock.transaction.findUnique.mockResolvedValue({
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'failed',
@@ -495,6 +502,7 @@ describe('TransactionsService.submit', () => {
     const xdr = buildUnsignedXdr();
     const sigXdr = signatureFor(xdr, signerA);
     prismaMock.transaction.findUnique.mockResolvedValue({
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'ready',
@@ -540,6 +548,7 @@ describe('TransactionsService.submit', () => {
     const xdr = buildUnsignedXdr();
     const sigXdr = signatureFor(xdr, signerA);
     prismaMock.transaction.findUnique.mockResolvedValue({
+      account: { network: 'mainnet' },
       id: 'tx1',
       accountId: 'acc1',
       status: 'ready',

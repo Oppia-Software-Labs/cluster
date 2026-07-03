@@ -8,9 +8,10 @@ const valid = {
   JWT_SECRET: 'a-very-long-secret-value-32-characters!',
   COOKIE_SECURE: 'false',
   STELLAR_NETWORK: 'mainnet',
-  NETWORK_PASSPHRASE: 'Public Global Stellar Network ; September 2015',
   STELLAR_RPC_URL: 'https://mainnet.sorobanrpc.com',
   STELLAR_HORIZON_URL: 'https://horizon.stellar.org',
+  STELLAR_TESTNET_RPC_URL: 'https://soroban-testnet.stellar.org',
+  DEFINDEX_API_KEY: 'sk_test_key',
 };
 
 describe('validateEnv', () => {
@@ -26,9 +27,24 @@ describe('validateEnv', () => {
     expect(() => validateEnv(incomplete)).toThrow(/DATABASE_URL/);
   });
 
-  it('rejects a non-mainnet network', () => {
+  it('accepts a testnet network', () => {
+    const parsed = validateEnv({ ...valid, STELLAR_NETWORK: 'testnet' });
+    expect(parsed.STELLAR_NETWORK).toBe('testnet');
+  });
+
+  it('defaults STELLAR_NETWORK to mainnet when omitted', () => {
+    const { STELLAR_NETWORK: _omit, ...withoutNetwork } = valid;
+    expect(validateEnv(withoutNetwork).STELLAR_NETWORK).toBe('mainnet');
+  });
+
+  it('rejects an unrecognized network', () => {
     expect(() =>
-      validateEnv({ ...valid, STELLAR_NETWORK: 'testnet' }),
+      validateEnv({ ...valid, STELLAR_NETWORK: 'futurenet' }),
     ).toThrow(/STELLAR_NETWORK/);
+  });
+
+  it('allows omitting the testnet RPC override', () => {
+    const { STELLAR_TESTNET_RPC_URL: _omit, ...withoutOverride } = valid;
+    expect(validateEnv(withoutOverride).STELLAR_TESTNET_RPC_URL).toBeUndefined();
   });
 });

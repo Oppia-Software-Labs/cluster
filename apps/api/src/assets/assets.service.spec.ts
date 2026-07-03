@@ -57,6 +57,7 @@ describe('AssetsService.getBalances', () => {
     prismaMock.multisigAccount.findUnique.mockResolvedValue({
       id: 'acc1',
       stellarAccountId: 'GABC',
+      network: 'mainnet',
     });
     prismaMock.balanceSnapshot.findFirst.mockResolvedValue({
       capturedAt,

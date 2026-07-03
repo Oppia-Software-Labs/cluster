@@ -1,5 +1,5 @@
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
-import { NETWORK_PASSPHRASE } from "@cluster/stellar";
+import { NETWORK_PASSPHRASE } from "@/lib/stellar-network";
 import { getWalletKit } from "@/lib/auth/wallet-kit";
 
 /**
@@ -13,14 +13,15 @@ import { getWalletKit } from "@/lib/auth/wallet-kit";
 export async function signWithWallet(
   xdr: string,
   signerPublicKey: string,
+  networkPassphrase: string = NETWORK_PASSPHRASE,
 ): Promise<string> {
   const kit = await getWalletKit();
   const { signedTxXdr } = await kit.signTransaction(xdr, {
     address: signerPublicKey,
-    networkPassphrase: NETWORK_PASSPHRASE,
+    networkPassphrase,
   });
 
-  const tx = TransactionBuilder.fromXDR(signedTxXdr, NETWORK_PASSPHRASE);
+  const tx = TransactionBuilder.fromXDR(signedTxXdr, networkPassphrase);
   const hint = Keypair.fromPublicKey(signerPublicKey).signatureHint();
   const decorated = tx.signatures.find((sig) => sig.hint().equals(hint));
   if (!decorated) {

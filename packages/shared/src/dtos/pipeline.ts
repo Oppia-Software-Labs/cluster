@@ -3,6 +3,7 @@ import {
   transactionTypeSchema,
   thresholdLevelSchema,
   transactionStatusSchema,
+  networkSchema,
 } from "../enums";
 import { configChangeSchema } from "./config-change";
 
@@ -12,6 +13,8 @@ export const proposeTransactionSchema = z.object({
   xdr: z.string().min(1),
   thresholdLevel: thresholdLevelSchema,
   memo: z.string().optional(),
+  /** Defaults to "mainnet" server-side when omitted. */
+  network: networkSchema.optional(),
   /**
    * For `config` transactions: the roster/threshold change to apply off-chain
    * once the transaction is submitted on-chain (see configChangeSchema).

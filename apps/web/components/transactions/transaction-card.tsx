@@ -11,6 +11,8 @@ import type {
 } from "@cluster/shared";
 import { accumulatedWeight } from "@cluster/stellar";
 
+import { explorerUrl, passphraseFor } from "@/lib/stellar-network";
+
 import { useAuth } from "@/lib/auth";
 import {
   useAddSignature,
@@ -78,7 +80,8 @@ export function TransactionCard({
     setError(null);
     setSigning(true);
     try {
-      const signatureXdr = await signWithWallet(tx.xdr, user.publicKey);
+      const passphrase = passphraseFor(tx.network);
+      const signatureXdr = await signWithWallet(tx.xdr, user.publicKey, passphrase);
       await addSignature.mutateAsync({
         signerPublicKey: user.publicKey,
         signatureXdr,
@@ -147,7 +150,7 @@ export function TransactionCard({
 
       {tx.submittedHash && (
         <a
-          href={`https://stellar.expert/explorer/public/tx/${tx.submittedHash}`}
+          href={explorerUrl(`tx/${tx.submittedHash}`, tx.network === "testnet" ? "testnet" : "mainnet")}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 font-mono text-[11px] text-[var(--gold)] hover:underline"

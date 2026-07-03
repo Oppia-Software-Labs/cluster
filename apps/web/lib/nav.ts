@@ -1,15 +1,11 @@
 import {
   Activity,
-  ArrowDownToLine,
+  ArrowLeftRight,
   Coins,
-  History,
-  Image,
   LayoutDashboard,
   Link2,
-  Send,
-  Settings,
-  TrendingUp,
   Users,
+  Vault,
   type LucideIcon,
 } from "lucide-react";
 
@@ -41,17 +37,13 @@ export type NavEntry = {
  */
 export const navRegistry: NavEntry[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Settings", href: "/settings", icon: Settings },
   // ↓ other members append below this line ↓
   // M2 — account governance (members & thresholds).
   { label: "Members", href: "/members", icon: Users },
   // M3 — assets & transactions.
-  { label: "Send", href: "/send", icon: Send },
-  { label: "Deposit", href: "/deposit", icon: ArrowDownToLine },
+  { label: "Transfer", href: "/transfer", icon: ArrowLeftRight },
   { label: "Activity", href: "/activity", icon: Activity },
-  { label: "History", href: "/history", icon: History },
   { label: "Coins", href: "/coins", icon: Coins },
   { label: "Trustlines", href: "/trustlines", icon: Link2 },
-  { label: "NFTs", href: "/nfts", icon: Image },
-  { label: "Cashflow", href: "/cashflow", icon: TrendingUp },
+  { label: "Invest", href: "/invest", icon: Vault },
 ];

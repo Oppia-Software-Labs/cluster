@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Account, Keypair } from "@stellar/stellar-sdk";
 import { PaymentBuilder } from "./payment.js";
-import { NETWORK_PASSPHRASE } from "../network.js";
+import { MAINNET_NETWORK_PASSPHRASE as NETWORK_PASSPHRASE } from "../network.js";
 
 const source = Keypair.random();
 const destination = Keypair.random();

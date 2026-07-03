@@ -1,12 +1,13 @@
 // Type-only import: erased at build time so the (browser-only) kit package is
 // never evaluated on the server. The real module is loaded lazily below.
 import type { StellarWalletsKit } from "@creit.tech/stellar-wallets-kit";
+import { STELLAR_NETWORK } from "@/lib/stellar-network";
 
 let kitPromise: Promise<typeof StellarWalletsKit> | null = null;
 
 /**
- * Lazily load and initialise the Stellar Wallets Kit (mainnet, all no-config
- * wallet modules) and return the kit class. In `@creit.tech/stellar-wallets-kit`
+ * Lazily load and initialise the Stellar Wallets Kit (on the configured
+ * network, all no-config wallet modules) and return the kit class. In `@creit.tech/stellar-wallets-kit`
  * v2 the kit is a static singleton (`StellarWalletsKit.init(...)`), so callers
  * use the static methods (`authModal`, `getAddress`, `signMessage`,
  * `signTransaction`) off the returned class.
@@ -29,7 +30,8 @@ export async function getWalletKit(): Promise<typeof StellarWalletsKit> {
           import("@creit.tech/stellar-wallets-kit/modules/freighter"),
         ]);
       StellarWalletsKit.init({
-        network: Networks.PUBLIC, // mainnet (spec: NEXT_PUBLIC_STELLAR_NETWORK=mainnet)
+        network:
+          STELLAR_NETWORK === "testnet" ? Networks.TESTNET : Networks.PUBLIC,
         selectedWalletId: FREIGHTER_ID,
         modules: defaultModules(),
       });

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CheckCircle2, Loader2, Send } from "lucide-react";
 import { StrKey } from "@stellar/stellar-sdk";
@@ -16,12 +16,9 @@ import { apiError } from "@/lib/api-error";
 
 const truncate = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
 
-export default function SendPage({
-  params,
-}: {
-  params: Promise<{ accountId: string }>;
-}) {
-  const { accountId } = use(params);
+/** Propose-a-payment panel. Formerly the standalone /send page — now the
+ * "Send" tab of /transfer. */
+export function SendPanel({ accountId }: { accountId: string }) {
   const { user } = useAuth();
   const { data: account } = useAccount(accountId);
   const { data: balancesData } = useBalances(accountId);
@@ -84,9 +81,9 @@ export default function SendPage({
         <div className="grid size-14 place-items-center rounded-2xl border border-[var(--signal)]/30 bg-[var(--surface)]">
           <CheckCircle2 className="size-7 text-[var(--signal)]" />
         </div>
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
           Payment proposed
-        </h1>
+        </h2>
         <p className="text-muted-foreground max-w-sm text-sm">
           {proposed.signed
             ? "Signed with your wallet. It is submitted on-chain automatically the moment the required signatures are collected — track it in Activity."
@@ -117,18 +114,6 @@ export default function SendPage({
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-6">
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--gold)]">
-          transfer
-        </p>
-        <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">
-          Send
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Propose a payment for the signers to approve.
-        </p>
-      </div>
-
       <div className="cl-card flex flex-col gap-5 p-5">
         {/* Asset */}
         <div className="flex flex-col gap-1.5">
