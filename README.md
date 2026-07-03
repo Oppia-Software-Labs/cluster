@@ -1,10 +1,24 @@
-# Cluster
+<div align="center">
 
-**A multisig treasury platform for Stellar** — create shared accounts governed by multiple signers and
-approval thresholds, then propose, co-sign, and submit transactions together. On top of standard
-multisig, Cluster adds asset management, trustlines, DeFi yield (DeFindex vaults), and **confidential
-tokens**: balances and transfer amounts hidden on-chain with zero-knowledge proofs, where co-signers can
-still decrypt and review each amount before they sign.
+# 🛡️ Cluster
+
+### Multisig treasury platform for Stellar — with zero-knowledge confidential tokens
+
+![Stellar](https://img.shields.io/badge/Stellar-Soroban-000000?logo=stellar&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)
+![Zero-Knowledge](https://img.shields.io/badge/ZK-UltraHonk%20·%20bb.js-6E4AFF)
+![Network](https://img.shields.io/badge/network-testnet-1B6AC6)
+
+</div>
+
+---
+
+Create shared accounts governed by multiple signers and approval thresholds, then **propose, co-sign, and
+submit** transactions together. On top of standard multisig, Cluster adds asset management, trustlines,
+DeFi yield (DeFindex vaults), and **confidential tokens** — balances and transfer amounts hidden on-chain
+with zero-knowledge proofs, where co-signers can still decrypt and review each amount before they sign.
 
 Cluster is a Turborepo monorepo: a NestJS API, a Next.js web app, and shared TypeScript packages
 (Stellar helpers, ZK cryptography, generated contract bindings, UI, and shared DTOs).
