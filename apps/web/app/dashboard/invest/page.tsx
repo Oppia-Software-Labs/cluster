@@ -62,6 +62,7 @@ export default function DashboardInvestPage() {
             <InvestSection
               accountId={account?.id ?? ""}
               stellarAccountId={account?.stellarAccountId}
+              basePath="/dashboard/invest"
             />
           )}
         </main>

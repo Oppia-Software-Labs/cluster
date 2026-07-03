@@ -14,6 +14,10 @@ export default function InvestPage({
   const { data: account } = useAccount(accountId);
 
   return (
-    <InvestSection accountId={accountId} stellarAccountId={account?.stellarAccountId} />
+    <InvestSection
+      accountId={accountId}
+      stellarAccountId={account?.stellarAccountId}
+      basePath={`/${accountId}/invest`}
+    />
   );
 }
